@@ -314,30 +314,19 @@ app.get('/api/providers/:id', async (request, response) => {
 });
 
 // GET campaign by ID
-app.get('/api/campaigns/:id', (req, res) => {
-  const campaignId = req.params.id;
-  db.get(queries.getCampaignById, [campaignId], (err, row) => {
-    if (err) {
-      res.status(500).json({ error: err.message });
-      return;
-    }
+app.get('/api/campaigns/:id', async (request, response) => {
+  try {
+    const campaignId = request.params.id;
+    const row = await getSingleRow(queries.getCampaignById, [campaignId]);
+
     if (!row) {
-      res.status(404).json({ error: 'Campaign not found' });
+      response.status(404).json({ error: 'Campaign not found' });
       return;
     }
-    res.json({
+
+    response.json({
       success: true,
-      data: {
-        campaign_id: this.lastID,
-        provider_id,
-        image,
-        campaign_bio,
-        body_text,
-        goal_amount,
-        milestone_1,
-        milestone_2,
-        milestone_3
-      }
+      data: row
     });
   } catch (error) {
     response.status(500).json({ error: error.message });
@@ -366,7 +355,7 @@ app.post('/api/donations', async (request, response) => {
       return;
     }
 
-    const campaignRow = await getSingleRow(queries.getCampaignWithOrganizationName, [donationInput.campaignId]);
+    const campaignRow = await getSingleRow(queries.getCampaignWithProviderName, [donationInput.campaignId]);
     if (!campaignRow) {
       response.status(404).json({
         success: false,
@@ -445,7 +434,7 @@ app.post('/api/campaigns/:id/close', async (request, response) => {
       return;
     }
 
-    const campaignRow = await getSingleRow(queries.getCampaignWithOrganizationName, [campaignId]);
+    const campaignRow = await getSingleRow(queries.getCampaignWithProviderName, [campaignId]);
     if (!campaignRow) {
       response.status(404).json({
         success: false,

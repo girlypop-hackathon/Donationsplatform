@@ -12,11 +12,11 @@ async function testEndpoints() {
   console.log('Testing API endpoints...\n');
   
   try {
-    // Test GET all organizations
-    console.log('1. Testing GET /api/organizations');
-    const organizationsResponse = await axios.get(`${baseUrl}/organizations`);
-    console.log('✓ Organizations:', organizationsResponse.data.data.length, 'records found');
-    console.log('  Sample:', organizationsResponse.data.data[0].name);
+    // Test GET all providers
+    console.log('1. Testing GET /api/providers');
+    const providersResponse = await axios.get(`${baseUrl}/providers`);
+    console.log('✓ Providers:', providersResponse.data.data.length, 'records found');
+    console.log('  Sample:', providersResponse.data.data[0].name);
     
     // Test GET all campaigns
     console.log('\n2. Testing GET /api/campaigns');

@@ -120,17 +120,17 @@ Returns all campaigns in the system.
 
 Returns unique donors (`user_name`, `email`).
 
-### 4. GET /organizations/:id
+### 4. GET /providers/:id
 
-Returns one organization by ID.
+Returns one provider by ID.
 
 ### 5. GET /campaigns/:id
 
 Returns one campaign by ID.
 
-### 6. GET /organizations/:id/campaigns
+### 6. GET /providers/:id/campaigns
 
-Returns campaigns for one organization.
+Returns campaigns for one provider.
 
 ### 7. GET /campaigns/:id/donations
 

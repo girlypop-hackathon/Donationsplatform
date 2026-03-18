@@ -30,10 +30,10 @@ const queries = {
     amount,
     general_newsletter
   ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-  getCampaignWithOrganizationName: `SELECT
-    campaigns.*, organizations.name AS organization_name
+  getCampaignWithProviderName: `SELECT
+    campaigns.*, providers.name AS provider_name
   FROM campaigns
-  LEFT JOIN organizations ON campaigns.organization_id = organizations.organization_id
+  LEFT JOIN providers ON campaigns.provider_id = providers.organization_id
   WHERE campaigns.campaign_id = ?`,
   getCampaignTotalDonations: `SELECT COALESCE(SUM(amount), 0) AS total_raised
   FROM donations
