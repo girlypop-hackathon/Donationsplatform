@@ -1,42 +1,67 @@
 # Donation Platform API Documentation
 
 ## Overview
-This API provides endpoints for accessing data from the donation platform database, including providers (both organizations and individuals), campaigns, and users.
+
+This API exposes donation platform data and email automation flows for:
+
+- Tiered thank-you emails based on donation amount.
+- Campaign milestone and close follow-up emails.
+- Opt-in newsletters for donors.
 
 ## Setup
 
 ### Prerequisites
+
 - Node.js (v14 or higher)
 - SQLite3
 
 ### Installation
-1. Navigate to the Backend directory:
-   ```bash
-   cd Backend
-   ```
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+1. Navigate to the backend folder.
 
-3. Start the server:
-   ```bash
-   npm start
-   ```
-   or for development with auto-restart:
-   ```bash
-   npm run dev
-   ```
-
-The server will run on `http://localhost:3000`
-
-## API Endpoints
-
-### Base URL
+```bash
+cd Backend
 ```
+
+1. Install dependencies.
+
+```bash
+npm install
+```
+
+1. Start the server.
+
+```bash
+npm start
+```
+
+Or, for development with auto-restart:
+
+```bash
+npm run dev
+```
+
+The server runs at `http://localhost:3000`.
+
+### Optional SMTP configuration
+
+If SMTP is configured, emails are sent through SMTP.
+If SMTP is not configured, email payloads are logged to the console.
+
+- `SMTP_HOST`
+- `SMTP_PORT`
+- `SMTP_USER`
+- `SMTP_PASS`
+- `SMTP_FROM`
+- `SMTP_SECURE` (`true` or `false`)
+
+## Base URL
+
+```text
 http://localhost:3000/api
 ```
+
+## Endpoints
 
 ### 1. GET /providers
 Returns all providers in the system (both organizations and individuals).
@@ -92,19 +117,48 @@ Returns all campaigns in the system.
 ```
 
 ### 3. GET /users
-Returns all unique users who have made donations.
 
-**Response:**
+Returns unique donors (`user_name`, `email`).
+
+### 4. GET /providers/:id
+
+Returns one provider by ID.
+
+### 5. GET /campaigns/:id
+
+Returns one campaign by ID.
+
+### 6. GET /providers/:id/campaigns
+
+Returns campaigns for one provider.
+
+### 7. GET /campaigns/:id/donations
+
+Returns donations for one campaign.
+
+### 8. POST /donations
+
+Creates a donation and triggers the donation email flow.
+
+Tier rules:
+
+- Under `200 DKK`: simple thank-you email.
+- `200-1,000 DKK`: personal thank-you + campaign update message.
+- Over `1,000 DKK`: personal thank-you + dedicated follow-up email.
+
+If a campaign milestone is reached by the new donation, donors opted in to campaign updates are notified.
+
+Request body:
+
 ```json
 {
-  "success": true,
-  "data": [
-    {
-      "user_name": "John Doe",
-      "email": "john@example.com"
-    },
-    ...
-  ]
+  "campaignId": 1,
+  "userName": "Jane Doe",
+  "email": "jane@example.com",
+  "accountNumber": "123456789",
+  "campaignUpdatesOptIn": true,
+  "amount": 1200,
+  "newsletterOptIn": true
 }
 ```
 
@@ -119,23 +173,27 @@ Returns a specific provider by ID.
 {
   "success": true,
   "data": {
-    "organization_id": 1,
-    "name": "Dyrenes Beskyttelse",
-    "logo": "logo1.png",
-    "bio": "Dedicated to animal protection in Denmark.",
-    "website_link": "https://www.dyrenesbeskyttelse.dk",
+    "donationId": 10,
+    "donationTier": "over_1000",
+    "totalRaisedAmount": 6200,
+    "triggeredMilestones": [
+      {
+        "eventType": "milestone_2_reached",
+        "milestoneAmount": 2500,
+        "notifiedSubscribers": 5
+      }
+    ],
     "is_organization": true
   }
 }
 ```
 
-### 5. GET /campaigns/:id
-Returns a specific campaign by ID.
+### 9. POST /campaigns/:id/close
 
-**Parameters:**
-- `id` (URL parameter) - Campaign ID
+Sends campaign close follow-up emails to donors opted in to campaign updates.
 
-**Response:**
+Success response:
+
 ```json
 {
   "success": true,
@@ -149,9 +207,19 @@ Returns a specific campaign by ID.
     "milestone_1": 1000,
     "milestone_2": 2500,
     "milestone_3": 4000
+    "campaignId": 1,
+    "notifiedSubscribers": 7,
+    "totalRaisedAmount": 9400
   }
 }
 ```
+
+### 10. POST /newsletters/send
+
+Sends a newsletter to donors opted in to newsletters.
+You can optionally filter by campaign by including `campaignId`.
+
+Request body:
 
 ### 6. GET /providers/:id/campaigns
 Returns all campaigns for a specific provider.
@@ -162,6 +230,9 @@ Returns all campaigns for a specific provider.
 **Response:**
 ```json
 {
+  "newsletterTitle": "April Campaign Updates",
+  "newsletterBody": "Thank you for supporting our mission this month.",
+  "campaignId": 1
   "success": true,
   "data": [
     {
@@ -272,24 +343,28 @@ Creates a new campaign for a provider.
 }
 ```
 
-## Error Handling
+## Error handling
 
-The API returns appropriate HTTP status codes and error messages:
+Common statuses:
 
-- `200 OK` - Successful request
-- `201 Created` - Resource created successfully
-- `400 Bad Request` - Invalid request data
-- `404 Not Found` - Resource not found
-- `500 Internal Server Error` - Server error
+- `200 OK` for successful reads.
+- `201 Created` for successful donation creation.
+- `400 Bad Request` for invalid input.
+- `404 Not Found` when resource does not exist.
+- `500 Internal Server Error` for server/database failures.
 
-Error response format:
+Error format:
+
 ```json
 {
+  "success": false,
   "error": "Error message"
 }
 ```
 
-## Database Schema
+## Database schema
+
+### Organizations
 
 ### Providers Table (formerly Organizations)
 - `organization_id` (INTEGER, PRIMARY KEY)
@@ -297,7 +372,6 @@ Error response format:
 - `logo` (TEXT)
 - `bio` (TEXT)
 - `website_link` (TEXT)
-- `is_organization` (BOOLEAN) - NEW: true for organizations, false for individuals
 
 ### Campaigns Table
 - `campaign_id` (INTEGER, PRIMARY KEY)
@@ -337,6 +411,12 @@ Error response format:
 - `POST /api/providers` - Create new provider
 - `POST /api/campaigns` - Create new campaign
 
+### Campaign events
+
+- `event_id` (INTEGER, PRIMARY KEY)
+- `campaign_id` (INTEGER, FOREIGN KEY)
+- `event_type` (TEXT, unique per campaign)
+- `created_at` (TEXT)
 ## Project Structure
 
 ```
@@ -351,6 +431,7 @@ Backend/
 
 ## Testing the API
 
+Run this smoke test script after starting the backend server:
 ### Test POST endpoints with curl:
 
 ```bash
@@ -386,3 +467,5 @@ The API is ready for production use. For deployment:
 2. Configure environment variables for database connection
 3. Use a process manager like PM2
 4. Set up proper logging and monitoring
+node Testing/test_endpoints.js
+```
