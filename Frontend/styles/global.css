@@ -1,7 +1,7 @@
 body{
   margin:0;
   font-family:Arial;
-  background:#f4f4f4;
+  background:white;
 }
 
 .container{
@@ -11,17 +11,64 @@ body{
 }
 
 .navbar{
-  display:flex;
-  justify-content:space-between;
-  padding:20px;
+  display:grid;
+  grid-template-columns:1fr auto 1fr;
+  align-items:center;
+  column-gap:36px;
+  padding:20px 32px;
   background:white;
   border-bottom:1px solid #ddd;
 }
 
-.nav-links a{
-  margin-left:20px;
+.logo-wrap{
+  display:flex;
+  align-items:center;
+  gap:0;
+  justify-self:center;
+}
+
+.logo-icon{
+  width:60px;
+  height:60px;
+  object-fit:contain;
+}
+
+.nav-links{
+  display:flex;
+  align-items:center;
+  gap:26px;
+}
+
+.nav-left{
+  justify-self:start;
+}
+
+.nav-right{
+  justify-self:end;
+}
+
+.navbar .nav-action,
+.navbar .nav-action:link,
+.navbar .nav-action:visited,
+.navbar .nav-action:hover,
+.navbar .nav-action:focus,
+.nav-left .nav-action,
+.nav-right .nav-action{
+  border:none;
+  background:transparent;
+  color:#001A4D !important;
+  -webkit-text-fill-color:#001A4D;
+  font-family:inherit;
+  font-size:16px;
+  cursor:pointer;
+  padding:0;
   text-decoration:none;
-  color:#333;
+}
+
+.logo{
+  color:#0B2EAE !important;
+  font-family:"Roboto", sans-serif;
+  margin:0;
 }
 
 .hero{
@@ -43,6 +90,10 @@ body{
 
 .card img{
   width:100%;
+  height:180px;
+  object-fit:cover;
+  border-radius:6px;
+  display:block;
 }
 
 .progress{
@@ -54,13 +105,13 @@ body{
 .progress-bar{
   height:10px;
   width:40%;
-  background:green;
+  background:#EA672D;
 }
 
 .donate-btn{
   width:100%;
   padding:10px;
-  background:#2ecc71;
+  background:#EA672D;
   color:white;
   border:none;
 }

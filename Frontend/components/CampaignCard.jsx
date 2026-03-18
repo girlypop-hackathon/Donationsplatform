@@ -1,20 +1,20 @@
 import React from "react"
 import ProgressBar from "./ProgressBar"
 
-function CampaignCard() {
+function CampaignCard({ image, title, description }) {
 
   return (
     <div className="card">
 
       <img
-        src="https://placehold.co/600x400"
-        alt="Animal campaign"
+        src={image}
+        alt={title}
       />
 
-      <h3>Campaign Title</h3>
+      <h3>{title}</h3>
 
       <p>
-        Short description about helping animals.
+        {description}
       </p>
 
       <ProgressBar />
