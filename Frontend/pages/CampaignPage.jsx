@@ -1,4 +1,10 @@
 import React, { useEffect, useState } from 'react'
+import { useParams } from 'react-router-dom'
+import ProgressBar from '../components/ProgressBar'
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
+const API_PREFIX = API_BASE_URL ? `${API_BASE_URL}/api` : '/api'
+const PRESET_AMOUNTS = [50, 100, 250, 500]
 
 const API_BASE_URL = 'http://localhost:3000/api'
 
@@ -55,44 +61,71 @@ function CampaignPage () {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          campaignId: Number(selectedCampaignId),
-          userName: donorName,
-          email: donorEmail,
-          accountNumber,
-          amount: Number(donationAmount),
-          newsletterOptIn,
-          campaignUpdatesOptIn
+          amount: selectedAmount,
+          user_name: 'Anonymous Donor'
         })
       })
 
-      const responsePayload = await response.json()
-
-      if (!response.ok || !responsePayload.success) {
-        setSubmitStatusMessage(responsePayload.error || 'Donation could not be completed.')
-        return
+      if (!response.ok) {
+        throw new Error('Could not create donation')
       }
 
-      setSubmitStatusMessage(
-        `Donation saved. Thank-you email tier: ${responsePayload.data.donationTier}.`
-      )
+      const result = await response.json()
+      const createdDonation = result.data
 
-      setDonorName('')
-      setDonorEmail('')
-      setAccountNumber('')
-      setDonationAmount('')
-      setNewsletterOptIn(false)
-      setCampaignUpdatesOptIn(false)
-    } catch (error) {
-      setSubmitStatusMessage('Donation failed due to a network/server error.')
+      if (createdDonation) {
+        setDonations((previous) => [...previous, createdDonation])
+        const updatedAmountRaisedFromApi = Number(createdDonation.amount_raised)
+
+        // Keep progress moving even if backend does not yet return amount_raised
+        setCampaign((prevCampaign) => ({
+          ...prevCampaign,
+          amount_raised: Number.isFinite(updatedAmountRaisedFromApi)
+            ? updatedAmountRaisedFromApi
+            : (Number(prevCampaign?.amount_raised) || donationsSum) + selectedAmount
+        }))
+      }
+
+      setDonationStatus('Thank you! Your donation was registered.')
+      setCustomAmount('')
+      setSelectedPreset(null)
+    } catch (err) {
+      setDonationStatus('Donation failed. Please try again.')
     } finally {
       setIsSubmittingDonation(false)
     }
   }
 
+  if (isLoading) {
+    return <p>Loading campaign...</p>
+  }
+
+  if (error) {
+    return <p>{error}</p>
+  }
+
+  if (!campaign) {
+    return <p>Campaign not found.</p>
+  }
+
+  const goalAmount = Number(campaign.goal_amount) || 0
+
   return (
     <div className='campaign-page'>
-      <img src='https://placehold.co/800x400' alt='campaign' />
+      <img
+        src={campaign.image || 'https://placehold.co/800x400?text=Campaign'}
+        alt={campaign.campaign_bio || 'campaign'}
+        onError={(event) => {
+          event.currentTarget.src = 'https://placehold.co/800x400?text=Campaign'
+        }}
+      />
 
+      <h1>{`Campaign #${campaign.campaign_id}`}</h1>
+
+      <p>{campaign.body_text || campaign.campaign_bio || 'No description available yet.'}</p>
+
+      <ProgressBar value={raisedAmount} max={goalAmount} />
+      <p>{`Raised: ${raisedAmount} / Goal: ${goalAmount}`}</p>
       <h1>Support a Campaign</h1>
 
       <p>Donate and choose if you want newsletters and campaign follow-up updates.</p>
