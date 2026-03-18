@@ -36,3 +36,4 @@ Projektet er bygget med **React** og **Vite**.
 Kombinationen af React + Vite gør det hurtigt at udvikle og nemt at køre projektet uden selv at sætte Webpack eller andre bundlere op.
 
 ## AI prompt
+spec kit - hvordan foreslår de at man udvikler med AI. Laver kravspekifekation og man vericiferer

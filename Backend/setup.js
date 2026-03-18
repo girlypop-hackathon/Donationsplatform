@@ -1,9 +1,10 @@
 const sqlite3 = require('sqlite3').verbose();
 
-// Create database
+// Create database connection
 const db = new sqlite3.Database('./donations.db', (err) => {
   if (err) {
-    console.error(err.message);
+    console.error('Database connection error:', err.message);
+    return;
   }
   console.log('Connected to the donations database.');
 });
@@ -27,7 +28,9 @@ db.serialize(() => {
     campaign_bio TEXT,
     body_text TEXT,
     goal_amount REAL,
-    milestones TEXT,
+    milestone_1 INTEGER,
+    milestone_2 INTEGER,
+    milestone_3 INTEGER,
     FOREIGN KEY (organization_id) REFERENCES organizations (organization_id)
   )`);
 
@@ -51,8 +54,25 @@ db.serialize(() => {
     template_text TEXT
   )`);
 
-  console.log('Tables created.');
+  console.log('Tables created or already exist.');
 
+  // Check if data already exists before inserting
+  db.get('SELECT COUNT(*) as count FROM organizations', [], (err, row) => {
+    if (err) {
+      console.error('Error checking organizations:', err.message);
+      return;
+    }
+
+    if (row.count === 0) {
+      console.log('No data found. Inserting sample data...');
+      insertSampleData(db);
+    } else {
+      console.log(`Database already contains ${row.count} organizations. No data inserted.`);
+    }
+  });
+});
+
+function insertSampleData(db) {
   // Insert organizations
   const organizations = [
     { name: 'Dyrenes Beskyttelse', logo: 'logo1.png', bio: 'Dedicated to animal protection in Denmark.', website_link: 'https://www.dyrenesbeskyttelse.dk' },
@@ -69,15 +89,15 @@ db.serialize(() => {
 
   // Insert campaigns
   const campaigns = [
-    { organization_id: 1, image: 'campaign1.jpg', campaign_bio: 'Help save abandoned pets.', body_text: 'Detailed description...', goal_amount: 5000, milestones: '1000,2500,4000' },
-    { organization_id: 2, image: 'campaign2.jpg', campaign_bio: 'Support wildlife conservation.', body_text: 'Detailed description...', goal_amount: 10000, milestones: '2000,5000,8000' },
-    { organization_id: 3, image: 'campaign3.jpg', campaign_bio: 'Aid animal shelters.', body_text: 'Detailed description...', goal_amount: 3000, milestones: '500,1500,2500' },
-    { organization_id: 4, image: 'campaign4.jpg', campaign_bio: 'Protect endangered species.', body_text: 'Detailed description...', goal_amount: 15000, milestones: '3000,7500,12000' }
+    { organization_id: 1, image: 'campaign1.jpg', campaign_bio: 'Help save abandoned pets.', body_text: 'Detailed description...', goal_amount: 5000, milestone_1: 1000, milestone_2: 2500, milestone_3: 4000 },
+    { organization_id: 2, image: 'campaign2.jpg', campaign_bio: 'Support wildlife conservation.', body_text: 'Detailed description...', goal_amount: 10000, milestone_1: 2000, milestone_2: 5000, milestone_3: 8000 },
+    { organization_id: 3, image: 'campaign3.jpg', campaign_bio: 'Aid animal shelters.', body_text: 'Detailed description...', goal_amount: 3000, milestone_1: 500, milestone_2: 1500, milestone_3: 2500 },
+    { organization_id: 4, image: 'campaign4.jpg', campaign_bio: 'Protect endangered species.', body_text: 'Detailed description...', goal_amount: 15000, milestone_1: 3000, milestone_2: 7500, milestone_3: 12000 }
   ];
 
-  const campaignStmt = db.prepare('INSERT INTO campaigns (organization_id, image, campaign_bio, body_text, goal_amount, milestones) VALUES (?, ?, ?, ?, ?, ?)');
+  const campaignStmt = db.prepare('INSERT INTO campaigns (organization_id, image, campaign_bio, body_text, goal_amount, milestone_1, milestone_2, milestone_3) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
   campaigns.forEach(campaign => {
-    campaignStmt.run(campaign.organization_id, campaign.image, campaign.campaign_bio, campaign.body_text, campaign.goal_amount, campaign.milestones);
+    campaignStmt.run(campaign.organization_id, campaign.image, campaign.campaign_bio, campaign.body_text, campaign.goal_amount, campaign.milestone_1, campaign.milestone_2, campaign.milestone_3);
   });
   campaignStmt.finalize();
 
@@ -107,13 +127,14 @@ db.serialize(() => {
   });
   templateStmt.finalize();
 
-  console.log('Data inserted.');
-});
+  console.log('Sample data inserted.');
+}
 
 // Close database
 db.close((err) => {
   if (err) {
-    console.error(err.message);
+    console.error('Error closing database:', err.message);
+  } else {
+    console.log('Database connection closed.');
   }
-  console.log('Closed the database connection.');
 });
