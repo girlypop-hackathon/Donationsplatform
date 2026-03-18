@@ -8,7 +8,7 @@ function CampaignCard ({ campaign }) {
   if (!campaign) return null
 
   const goalAmount = Number(campaign.goal_amount) || 0
-  const raisedAmount = Number(campaign.milestone_1) || 0
+  const raisedAmount = Number(campaign.amount_raised) || 0
 
   return (
     <div className='card'>

@@ -44,7 +44,7 @@ function Home () {
         setIsLoadingOrganizations(true)
         setOrganizationError('')
 
-        const response = await fetch(`${API_PREFIX}/organizations`, {
+        const response = await fetch(`${API_PREFIX}/providers`, {
           signal: controller.signal
         })
 

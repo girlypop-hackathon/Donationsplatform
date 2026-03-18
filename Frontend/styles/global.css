@@ -91,6 +91,69 @@ body {
   text-decoration: none;
 }
 
+.donation-box {
+  margin-top: 20px;
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+}
+
+.preset-donations {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.preset-btn {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+  padding: 10px;
+  cursor: pointer;
+}
+
+.preset-btn.active {
+  background: #2ecc71;
+  color: white;
+  border-color: #2ecc71;
+}
+
+.donation-box input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.selected-donation {
+  margin: 10px 0;
+  font-weight: 600;
+}
+
+.donation-status {
+  margin: 10px 0;
+  color: #2f7d32;
+  font-weight: 600;
+}
+
+.donation-box button {
+  margin-top: 10px;
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  background: #2ecc71;
+  color: white;
+  cursor: pointer;
+}
+
+.donation-box button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .footer {
   text-align: center;
   padding: 20px;
