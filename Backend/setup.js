@@ -1,4 +1,4 @@
-const sqlite3 = require('sqlite3').verbose();
+const sqlite3 = require('sqlite3').verbose()
 
 // Create database connection
 const db = new sqlite3.Database('./donations.db', (err) => {
@@ -6,8 +6,8 @@ const db = new sqlite3.Database('./donations.db', (err) => {
     console.error('Database connection error:', err.message);
     return;
   }
-  console.log('Connected to the donations database.');
-});
+  console.log('Connected to the donations database.')
+})
 
 // Create tables
 db.serialize(() => {
@@ -18,7 +18,7 @@ db.serialize(() => {
     logo TEXT,
     bio TEXT,
     website_link TEXT
-  )`);
+  )`)
 
   // Campaigns table
   db.run(`CREATE TABLE IF NOT EXISTS campaigns (
@@ -32,7 +32,7 @@ db.serialize(() => {
     milestone_2 INTEGER,
     milestone_3 INTEGER,
     FOREIGN KEY (organization_id) REFERENCES organizations (organization_id)
-  )`);
+  )`)
 
   // Donations table
   db.run(`CREATE TABLE IF NOT EXISTS donations (
@@ -45,14 +45,14 @@ db.serialize(() => {
     amount REAL,
     general_newsletter BOOLEAN,
     FOREIGN KEY (campaign_id) REFERENCES campaigns (campaign_id)
-  )`);
+  )`)
 
   // Email templates table
   db.run(`CREATE TABLE IF NOT EXISTS email_templates (
     template_id INTEGER PRIMARY KEY AUTOINCREMENT,
     level INTEGER,
     template_text TEXT
-  )`);
+  )`)
 
   console.log('Tables created or already exist.');
 
@@ -75,17 +75,44 @@ db.serialize(() => {
 function insertSampleData(db) {
   // Insert organizations
   const organizations = [
-    { name: 'Dyrenes Beskyttelse', logo: 'logo1.png', bio: 'Dedicated to animal protection in Denmark.', website_link: 'https://www.dyrenesbeskyttelse.dk' },
-    { name: 'Dyreværnet', logo: 'logo2.png', bio: 'Working for animal welfare and rights.', website_link: 'https://www.dyreværnet.dk' },
-    { name: 'OSA', logo: 'logo3.png', bio: 'Organization for animal shelters.', website_link: 'https://www.osa.dk' },
-    { name: 'WWF', logo: 'logo4.png', bio: 'World Wildlife Fund for conservation.', website_link: 'https://www.wwf.org' }
-  ];
+    {
+      name: 'Dyrenes Beskyttelse',
+      logo: 'logo1.png',
+      bio: 'Dedicated to animal protection in Denmark.',
+      website_link: 'https://www.dyrenesbeskyttelse.dk'
+    },
+    {
+      name: 'Dyreværnet',
+      logo: 'logo2.png',
+      bio: 'Working for animal welfare and rights.',
+      website_link: 'https://www.dyreværnet.dk'
+    },
+    {
+      name: 'OSA',
+      logo: 'logo3.png',
+      bio: 'Organization for animal shelters.',
+      website_link: 'https://www.osa.dk'
+    },
+    {
+      name: 'WWF',
+      logo: 'logo4.png',
+      bio: 'World Wildlife Fund for conservation.',
+      website_link: 'https://www.wwf.org'
+    }
+  ]
 
-  const organizationStmt = db.prepare('INSERT INTO organizations (name, logo, bio, website_link) VALUES (?, ?, ?, ?)');
-  organizations.forEach(organization => {
-    organizationStmt.run(organization.name, organization.logo, organization.bio, organization.website_link);
-  });
-  organizationStmt.finalize();
+  const organizationStmt = db.prepare(
+    'INSERT INTO organizations (name, logo, bio, website_link) VALUES (?, ?, ?, ?)'
+  )
+  organizations.forEach((organization) => {
+    organizationStmt.run(
+      organization.name,
+      organization.logo,
+      organization.bio,
+      organization.website_link
+    )
+  })
+  organizationStmt.finalize()
 
   // Insert campaigns
   const campaigns = [
@@ -103,31 +130,79 @@ function insertSampleData(db) {
 
   // Insert donations
   const donations = [
-    { campaign_id: 1, user_name: 'John Doe', email: 'john@example.com', account_number: '123456789', is_subscription: true, amount: 50, general_newsletter: true },
-    { campaign_id: 2, user_name: 'Jane Smith', email: 'jane@example.com', account_number: '987654321', is_subscription: false, amount: 100, general_newsletter: false },
-    { campaign_id: 3, user_name: 'Bob Johnson', email: 'bob@example.com', account_number: '456789123', is_subscription: true, amount: 25, general_newsletter: true }
-  ];
+    {
+      campaign_id: 1,
+      user_name: 'John Doe',
+      email: 'john@example.com',
+      account_number: '123456789',
+      is_subscription: true,
+      amount: 50,
+      general_newsletter: true
+    },
+    {
+      campaign_id: 2,
+      user_name: 'Jane Smith',
+      email: 'jane@example.com',
+      account_number: '987654321',
+      is_subscription: false,
+      amount: 100,
+      general_newsletter: false
+    },
+    {
+      campaign_id: 3,
+      user_name: 'Bob Johnson',
+      email: 'bob@example.com',
+      account_number: '456789123',
+      is_subscription: true,
+      amount: 25,
+      general_newsletter: true
+    }
+  ]
 
-  const donationStmt = db.prepare('INSERT INTO donations (campaign_id, user_name, email, account_number, is_subscription, amount, general_newsletter) VALUES (?, ?, ?, ?, ?, ?, ?)');
-  donations.forEach(donation => {
-    donationStmt.run(donation.campaign_id, donation.user_name, donation.email, donation.account_number, donation.is_subscription, donation.amount, donation.general_newsletter);
-  });
-  donationStmt.finalize();
+  const donationStmt = db.prepare(
+    'INSERT INTO donations (campaign_id, user_name, email, account_number, is_subscription, amount, general_newsletter) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  )
+  donations.forEach((donation) => {
+    donationStmt.run(
+      donation.campaign_id,
+      donation.user_name,
+      donation.email,
+      donation.account_number,
+      donation.is_subscription,
+      donation.amount,
+      donation.general_newsletter
+    )
+  })
+  donationStmt.finalize()
 
   // Insert email templates
   const emailTemplates = [
-    { level: 1, template_text: 'Thank you {user_name} for your donation of {amount} to {campaign_name}. Your support helps animals in need.' },
-    { level: 2, template_text: 'Dear {user_name}, we appreciate your generous donation of {amount} to {campaign_name}. You are making a real difference.' },
-    { level: 3, template_text: 'Hello {user_name}, thank you for your substantial contribution of {amount} to {campaign_name}. Your kindness is invaluable.' }
-  ];
+    {
+      level: 1,
+      template_text:
+        'Thank you {user_name} for your donation of {amount} to {campaign_name}. Your support helps animals in need.'
+    },
+    {
+      level: 2,
+      template_text:
+        'Dear {user_name}, we appreciate your generous donation of {amount} to {campaign_name}. You are making a real difference.'
+    },
+    {
+      level: 3,
+      template_text:
+        'Hello {user_name}, thank you for your substantial contribution of {amount} to {campaign_name}. Your kindness is invaluable.'
+    }
+  ]
 
-  const templateStmt = db.prepare('INSERT INTO email_templates (level, template_text) VALUES (?, ?)');
-  emailTemplates.forEach(template => {
-    templateStmt.run(template.level, template.template_text);
-  });
-  templateStmt.finalize();
+  const templateStmt = db.prepare(
+    'INSERT INTO email_templates (level, template_text) VALUES (?, ?)'
+  )
+  emailTemplates.forEach((template) => {
+    templateStmt.run(template.level, template.template_text)
+  })
+  templateStmt.finalize()
 
-  console.log('Sample data inserted.');
+  console.log('Data inserted.')
 }
 
 // Close database

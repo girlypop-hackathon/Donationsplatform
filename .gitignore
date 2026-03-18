@@ -1,5 +1,6 @@
 # Node.js
 node_modules/
+Backend/node_modules
 
 # Logs
 logs
@@ -14,9 +15,15 @@ pids
 hib
 *.bowerrc
 
+# Build and dist
+dist/
+build/
+coverage/
+
 # Environment files
 .env
 .env.local
+*.db
 .env.development
 .env.test
 .env.production

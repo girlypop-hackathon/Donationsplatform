@@ -1,36 +1,21 @@
-import React from "react"
+import React from 'react'
 
-function CampaignPage() {
-
+function CampaignPage () {
   return (
-    <div className="campaign-page">
-
-      <img
-        src="https://placehold.co/800x400"
-        alt="campaign"
-      />
+    <div className='campaign-page'>
+      <img src='https://placehold.co/800x400' alt='campaign' />
 
       <h1>Campaign Title</h1>
 
-      <p>
-        Full description of the campaign.
-      </p>
+      <p>Full description of the campaign.</p>
 
-      <div className="donation-box">
-
+      <div className='donation-box'>
         <h3>Donate</h3>
 
-        <input
-          type="number"
-          placeholder="Amount"
-        />
+        <input type='number' placeholder='Amount' />
 
-        <button>
-          Donate
-        </button>
-
+        <button>Donate</button>
       </div>
-
     </div>
   )
 }

@@ -1,36 +1,21 @@
-import React from "react"
+import React from 'react'
 
-function CreateCampaign() {
-
+function CreateCampaign () {
   return (
-    <div className="form-page">
-
+    <div className='form-page'>
       <h1>Create Campaign</h1>
 
-      <form className="campaign-form">
+      <form className='campaign-form'>
+        <input type='text' placeholder='Campaign title' />
 
-        <input
-          type="text"
-          placeholder="Campaign title"
-        />
+        <textarea placeholder='Description' />
 
-        <textarea
-          placeholder="Description"
-        />
+        <input type='number' placeholder='Goal amount' />
 
-        <input
-          type="number"
-          placeholder="Goal amount"
-        />
+        <input type='date' />
 
-        <input type="date" />
-
-        <button>
-          Create Campaign
-        </button>
-
+        <button>Create Campaign</button>
       </form>
-
     </div>
   )
 }
