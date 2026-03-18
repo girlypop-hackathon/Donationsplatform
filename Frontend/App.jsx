@@ -10,13 +10,18 @@ import CreateCampaign from './pages/CreateCampaign'
 
 function App () {
   return (
-    <BrowserRouter>
+    <BrowserRouter
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true
+      }}
+    >
       <Navbar />
 
       <main className='container'>
         <Routes>
           <Route path='/' element={<Home />} />
-          <Route path='/campaign' element={<CampaignPage />} />
+          <Route path='/campaign/:id' element={<CampaignPage />} />
           <Route path='/create' element={<CreateCampaign />} />
         </Routes>
       </main>

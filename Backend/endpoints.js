@@ -7,13 +7,15 @@ Beskrivelse: API endpoints for the donation platform
 // endpoints.js - API endpoints for the donation platform
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
+const path = require('path');
 const queries = require('./queries');
 
 const app = express();
 const PORT = 3000;
 
 // Create database connection
-db = new sqlite3.Database('./donations.db', (err) => {
+const databasePath = path.join(__dirname, 'donations.db');
+db = new sqlite3.Database(databasePath, (err) => {
   if (err) {
     console.error('Database connection error:', err.message);
   } else {
@@ -23,6 +25,18 @@ db = new sqlite3.Database('./donations.db', (err) => {
 
 // Middleware
 app.use(express.json());
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+    return;
+  }
+
+  next();
+});
 
 // GET all providers
 app.get('/api/providers', (req, res) => {
