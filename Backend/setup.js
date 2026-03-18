@@ -54,6 +54,16 @@ db.serialize(() => {
     template_text TEXT
   )`)
 
+  // Campaign events table for tracking sent milestone and close follow-up emails
+  db.run(`CREATE TABLE IF NOT EXISTS campaign_events (
+    event_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    campaign_id INTEGER NOT NULL,
+    event_type TEXT NOT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(campaign_id, event_type),
+    FOREIGN KEY (campaign_id) REFERENCES campaigns (campaign_id)
+  )`)
+
   console.log('Tables created or already exist.');
 
   // Check if data already exists before inserting
@@ -65,14 +75,15 @@ db.serialize(() => {
 
     if (row.count === 0) {
       console.log('No data found. Inserting sample data...');
-      insertSampleData(db);
+      insertSampleData(db, closeDatabaseConnection);
     } else {
       console.log(`Database already contains ${row.count} organizations. No data inserted.`);
+      closeDatabaseConnection();
     }
   });
 });
 
-function insertSampleData(db) {
+function insertSampleData(db, onComplete) {
   // Insert organizations
   const organizations = [
     {
@@ -200,16 +211,21 @@ function insertSampleData(db) {
   emailTemplates.forEach((template) => {
     templateStmt.run(template.level, template.template_text)
   })
-  templateStmt.finalize()
-
-  console.log('Data inserted.')
+  templateStmt.finalize(() => {
+    console.log('Data inserted.')
+    onComplete()
+  })
 }
 
-// Close database
-db.close((err) => {
-  if (err) {
-    console.error('Error closing database:', err.message);
-  } else {
-    console.log('Database connection closed.');
-  }
-});
+/**
+ * Closes the database connection once setup and optional seed work is finished.
+ */
+function closeDatabaseConnection() {
+  db.close((err) => {
+    if (err) {
+      console.error('Error closing database:', err.message)
+    } else {
+      console.log('Database connection closed.')
+    }
+  })
+}

@@ -1,226 +1,217 @@
 # Donation Platform API Documentation
 
 ## Overview
-This API provides endpoints for accessing data from the donation platform database, including organizations, campaigns, and users.
+
+This API exposes donation platform data and email automation flows for:
+
+- Tiered thank-you emails based on donation amount.
+- Campaign milestone and close follow-up emails.
+- Opt-in newsletters for donors.
 
 ## Setup
 
 ### Prerequisites
+
 - Node.js (v14 or higher)
 - SQLite3
 
 ### Installation
-1. Navigate to the Backend directory:
-   ```bash
-   cd Backend
-   ```
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+1. Navigate to the backend folder.
 
-3. Start the server:
-   ```bash
-   npm start
-   ```
-   or for development with auto-restart:
-   ```bash
-   npm run dev
-   ```
-
-The server will run on `http://localhost:3000`
-
-## API Endpoints
-
-### Base URL
+```bash
+cd Backend
 ```
+
+1. Install dependencies.
+
+```bash
+npm install
+```
+
+1. Start the server.
+
+```bash
+npm start
+```
+
+Or, for development with auto-restart:
+
+```bash
+npm run dev
+```
+
+The server runs at `http://localhost:3000`.
+
+### Optional SMTP configuration
+
+If SMTP is configured, emails are sent through SMTP.
+If SMTP is not configured, email payloads are logged to the console.
+
+- `SMTP_HOST`
+- `SMTP_PORT`
+- `SMTP_USER`
+- `SMTP_PASS`
+- `SMTP_FROM`
+- `SMTP_SECURE` (`true` or `false`)
+
+## Base URL
+
+```text
 http://localhost:3000/api
 ```
 
-### 1. GET /organizations
-Returns all organizations in the system.
+## Endpoints
 
-**Response:**
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "organization_id": 1,
-      "name": "Dyrenes Beskyttelse",
-      "logo": "logo1.png",
-      "bio": "Dedicated to animal protection in Denmark.",
-      "website_link": "https://www.dyrenesbeskyttelse.dk"
-    },
-    ...
-  ]
-}
-```
+### 1. GET /organizations
+
+Returns all organizations.
 
 ### 2. GET /campaigns
-Returns all campaigns in the system.
 
-**Response:**
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "campaign_id": 1,
-      "organization_id": 1,
-      "image": "campaign1.jpg",
-      "campaign_bio": "Help save abandoned pets.",
-      "body_text": "Detailed description...",
-      "goal_amount": 5000,
-      "milestone_1": 1000,
-      "milestone_2": 2500,
-      "milestone_3": 4000
-    },
-    ...
-  ]
-}
-```
+Returns all campaigns.
 
 ### 3. GET /users
-Returns all unique users who have made donations.
 
-**Response:**
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "user_name": "John Doe",
-      "email": "john@example.com"
-    },
-    ...
-  ]
-}
-```
+Returns unique donors (`user_name`, `email`).
 
 ### 4. GET /organizations/:id
-Returns a specific organization by ID.
 
-**Parameters:**
-- `id` (URL parameter) - Organization ID
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "organization_id": 1,
-    "name": "Dyrenes Beskyttelse",
-    "logo": "logo1.png",
-    "bio": "Dedicated to animal protection in Denmark.",
-    "website_link": "https://www.dyrenesbeskyttelse.dk"
-  }
-}
-```
+Returns one organization by ID.
 
 ### 5. GET /campaigns/:id
-Returns a specific campaign by ID.
 
-**Parameters:**
-- `id` (URL parameter) - Campaign ID
+Returns one campaign by ID.
 
-**Response:**
+### 6. GET /organizations/:id/campaigns
+
+Returns campaigns for one organization.
+
+### 7. GET /campaigns/:id/donations
+
+Returns donations for one campaign.
+
+### 8. POST /donations
+
+Creates a donation and triggers the donation email flow.
+
+Tier rules:
+
+- Under `200 DKK`: simple thank-you email.
+- `200-1,000 DKK`: personal thank-you + campaign update message.
+- Over `1,000 DKK`: personal thank-you + dedicated follow-up email.
+
+If a campaign milestone is reached by the new donation, donors opted in to campaign updates are notified.
+
+Request body:
+
+```json
+{
+  "campaignId": 1,
+  "userName": "Jane Doe",
+  "email": "jane@example.com",
+  "accountNumber": "123456789",
+  "campaignUpdatesOptIn": true,
+  "amount": 1200,
+  "newsletterOptIn": true
+}
+```
+
+Success response:
+
 ```json
 {
   "success": true,
   "data": {
-    "campaign_id": 1,
-    "organization_id": 1,
-    "image": "campaign1.jpg",
-    "campaign_bio": "Help save abandoned pets.",
-    "body_text": "Detailed description...",
-    "goal_amount": 5000,
-    "milestone_1": 1000,
-    "milestone_2": 2500,
-    "milestone_3": 4000
+    "donationId": 10,
+    "donationTier": "over_1000",
+    "totalRaisedAmount": 6200,
+    "triggeredMilestones": [
+      {
+        "eventType": "milestone_2_reached",
+        "milestoneAmount": 2500,
+        "notifiedSubscribers": 5
+      }
+    ]
   }
 }
 ```
 
-### 6. GET /organizations/:id/campaigns
-Returns all campaigns for a specific organization.
+### 9. POST /campaigns/:id/close
 
-**Parameters:**
-- `id` (URL parameter) - Organization ID
+Sends campaign close follow-up emails to donors opted in to campaign updates.
 
-**Response:**
+Success response:
+
 ```json
 {
   "success": true,
-  "data": [
-    {
-      "campaign_id": 1,
-      "organization_id": 1,
-      "image": "campaign1.jpg",
-      "campaign_bio": "Help save abandoned pets.",
-      "body_text": "Detailed description...",
-      "goal_amount": 5000,
-      "milestone_1": 1000,
-      "milestone_2": 2500,
-      "milestone_3": 4000
-    },
-    ...
-  ]
+  "data": {
+    "campaignId": 1,
+    "notifiedSubscribers": 7,
+    "totalRaisedAmount": 9400
+  }
 }
 ```
 
-### 7. GET /campaigns/:id/donations
-Returns all donations for a specific campaign.
+### 10. POST /newsletters/send
 
-**Parameters:**
-- `id` (URL parameter) - Campaign ID
+Sends a newsletter to donors opted in to newsletters.
+You can optionally filter by campaign by including `campaignId`.
 
-**Response:**
+Request body:
+
+```json
+{
+  "newsletterTitle": "April Campaign Updates",
+  "newsletterBody": "Thank you for supporting our mission this month.",
+  "campaignId": 1
+}
+```
+
+Success response:
+
 ```json
 {
   "success": true,
-  "data": [
-    {
-      "donation_id": 1,
-      "campaign_id": 1,
-      "user_name": "John Doe",
-      "email": "john@example.com",
-      "account_number": "123456789",
-      "is_subscription": true,
-      "amount": 50,
-      "general_newsletter": true
-    },
-    ...
-  ]
+  "data": {
+    "recipientsCount": 11,
+    "campaignId": 1
+  }
 }
 ```
 
-## Error Handling
+## Error handling
 
-The API returns appropriate HTTP status codes and error messages:
+Common statuses:
 
-- `200 OK` - Successful request
-- `404 Not Found` - Resource not found
-- `500 Internal Server Error` - Server error
+- `200 OK` for successful reads.
+- `201 Created` for successful donation creation.
+- `400 Bad Request` for invalid input.
+- `404 Not Found` when resource does not exist.
+- `500 Internal Server Error` for server/database failures.
 
-Error response format:
+Error format:
+
 ```json
 {
+  "success": false,
   "error": "Error message"
 }
 ```
 
-## Database Schema
+## Database schema
 
-### Organizations Table
+### Organizations
+
 - `organization_id` (INTEGER, PRIMARY KEY)
 - `name` (TEXT)
 - `logo` (TEXT)
 - `bio` (TEXT)
 - `website_link` (TEXT)
 
-### Campaigns Table
+### Campaigns
+
 - `campaign_id` (INTEGER, PRIMARY KEY)
 - `organization_id` (INTEGER, FOREIGN KEY)
 - `image` (TEXT)
@@ -231,7 +222,8 @@ Error response format:
 - `milestone_2` (INTEGER)
 - `milestone_3` (INTEGER)
 
-### Donations Table (used for users)
+### Donations
+
 - `donation_id` (INTEGER, PRIMARY KEY)
 - `campaign_id` (INTEGER, FOREIGN KEY)
 - `user_name` (TEXT)
@@ -241,41 +233,17 @@ Error response format:
 - `amount` (REAL)
 - `general_newsletter` (BOOLEAN)
 
-## Project Structure
+### Campaign events
 
-```
-Backend/
-├── donations.db          # SQLite database
-├── endpoints.js          # API endpoints
-├── queries.js           # SQL queries
-├── package.json         # Project dependencies
-├── API_DOCUMENTATION.md # This documentation
-└── test_endpoints.js    # Test script
-```
+- `event_id` (INTEGER, PRIMARY KEY)
+- `campaign_id` (INTEGER, FOREIGN KEY)
+- `event_type` (TEXT, unique per campaign)
+- `created_at` (TEXT)
 
 ## Testing
 
-Run the test script to verify all endpoints are working:
+Run this smoke test script after starting the backend server:
 
 ```bash
-node test_endpoints.js
+node Testing/test_endpoints.js
 ```
-
-Note: Make sure the server is running before running tests.
-
-## Development
-
-For development, use nodemon for automatic server restart:
-
-```bash
-npm run dev
-```
-
-## Deployment
-
-The API is ready for production use. For deployment:
-
-1. Set up a production database
-2. Configure environment variables for database connection
-3. Use a process manager like PM2
-4. Set up proper logging and monitoring

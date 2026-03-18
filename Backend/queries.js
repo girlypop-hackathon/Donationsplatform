@@ -18,7 +18,52 @@ const queries = {
   getCampaignsByOrganization: `SELECT * FROM campaigns WHERE organization_id = ?`,
   getDonationsByCampaign: `SELECT * FROM donations WHERE campaign_id = ?`,
   getOrganizationById: `SELECT * FROM organizations WHERE organization_id = ?`,
-  getCampaignById: `SELECT * FROM campaigns WHERE campaign_id = ?`
+  getCampaignById: `SELECT * FROM campaigns WHERE campaign_id = ?`,
+
+  // Donation write and campaign progress queries
+  insertDonation: `INSERT INTO donations (
+    campaign_id,
+    user_name,
+    email,
+    account_number,
+    is_subscription,
+    amount,
+    general_newsletter
+  ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+  getCampaignWithOrganizationName: `SELECT
+    campaigns.*, organizations.name AS organization_name
+  FROM campaigns
+  LEFT JOIN organizations ON campaigns.organization_id = organizations.organization_id
+  WHERE campaigns.campaign_id = ?`,
+  getCampaignTotalDonations: `SELECT COALESCE(SUM(amount), 0) AS total_raised
+  FROM donations
+  WHERE campaign_id = ?`,
+
+  // Email subscription and audience queries
+  getCampaignUpdateSubscribers: `SELECT DISTINCT email, user_name
+  FROM donations
+  WHERE campaign_id = ?
+    AND is_subscription = 1
+    AND email IS NOT NULL
+    AND TRIM(email) != ''`,
+  getNewsletterSubscribers: `SELECT DISTINCT email, user_name
+  FROM donations
+  WHERE general_newsletter = 1
+    AND email IS NOT NULL
+    AND TRIM(email) != ''`,
+  getCampaignNewsletterSubscribers: `SELECT DISTINCT email, user_name
+  FROM donations
+  WHERE campaign_id = ?
+    AND general_newsletter = 1
+    AND email IS NOT NULL
+    AND TRIM(email) != ''`,
+
+  // Campaign event tracking to avoid duplicate milestone notifications
+  getCampaignEventByType: `SELECT event_id
+  FROM campaign_events
+  WHERE campaign_id = ? AND event_type = ?`,
+  insertCampaignEvent: `INSERT INTO campaign_events (campaign_id, event_type)
+  VALUES (?, ?)`
 };
 
 module.exports = queries;

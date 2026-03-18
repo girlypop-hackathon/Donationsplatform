@@ -17,3 +17,6 @@ console.log('- GET /api/organizations/:id - Get organization by ID');
 console.log('- GET /api/campaigns/:id - Get campaign by ID');
 console.log('- GET /api/organizations/:id/campaigns - Get campaigns by organization');
 console.log('- GET /api/campaigns/:id/donations - Get donations by campaign');
+console.log('- POST /api/donations - Create donation and send tiered thank-you emails');
+console.log('- POST /api/campaigns/:id/close - Send campaign close follow-up emails');
+console.log('- POST /api/newsletters/send - Send newsletters to opted-in donors');
