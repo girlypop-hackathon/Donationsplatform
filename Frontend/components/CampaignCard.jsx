@@ -2,7 +2,6 @@ import React from "react"
 import ProgressBar from "./ProgressBar"
 
 function CampaignCard({ image, title, description }) {
-
   return (
     <div className="card">
 
@@ -21,10 +20,7 @@ function CampaignCard({ image, title, description }) {
 
       <p>Raised: --- / Goal: ---</p>
 
-      <button className="donate-btn">
-        View Campaign
-      </button>
-
+      <button className="donate-btn">View Campaign</button>
     </div>
   )
 }

@@ -3,7 +3,6 @@ import { Link } from "react-router-dom"
 
 function Navbar() {
   const navItemStyle = { color: "#001A4D" }
-
   return (
     <nav className="navbar">
 
@@ -27,7 +26,6 @@ function Navbar() {
         <Link className="nav-action" to="/signin" style={navItemStyle}>Sign In</Link>
         <Link className="nav-action" to="/search" style={navItemStyle}>Search</Link>
       </div>
-
     </nav>
   )
 }

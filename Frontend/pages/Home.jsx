@@ -1,8 +1,7 @@
-import React from "react"
-import CampaignCard from "../components/CampaignCard"
+import React from 'react'
+import CampaignCard from '../components/CampaignCard'
 
-function Home() {
-
+function Home () {
   return (
     <div>
 
@@ -35,7 +34,6 @@ function Home() {
         />
 
       </section>
-
     </div>
   )
 }

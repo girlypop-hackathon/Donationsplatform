@@ -1,5 +1,5 @@
-import React from "react"
-import { BrowserRouter, Routes, Route } from "react-router-dom"
+import React from 'react'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 
 import Navbar from "./components/NavBar"
 import Footer from "./components/Footer"
@@ -12,14 +12,12 @@ import Info from "./pages/Info"
 import SignIn from "./pages/SignIn"
 import Search from "./pages/Search"
 
-function App() {
+function App () {
   return (
     <BrowserRouter>
-
       <Navbar />
 
-      <main className="container">
-
+      <main className='container'>
         <Routes>
 
           <Route path="/" element={<Home />} />
@@ -31,11 +29,9 @@ function App() {
           <Route path="/search" element={<Search />} />
 
         </Routes>
-
       </main>
 
       <Footer />
-
     </BrowserRouter>
   )
 }
