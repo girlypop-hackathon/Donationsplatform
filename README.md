@@ -1,4 +1,5 @@
 # Donationsplatform
+
 10 day vibe hackaton
 
 ## Sådan kører du projektet
@@ -6,20 +7,23 @@
 Projektet er bygget med **React** og **Vite**.
 
 ### Krav
+
 - Node.js installeret (fx version 18+)
 
 ### Installation
+
 1. Åbn en terminal i projektmappen (`Donationsplatform` – der hvor `package.json` ligger)
 2. Kør:
-	```bash
-	npm install
-	```
+   ```bash
+   npm install
+   ```
 
 ### Udviklingsserver
+
 1. I samme mappe, kør:
-	```bash
-	npm run dev
-	```
+   ```bash
+   npm run dev
+   ```
 2. Terminalen viser en URL (typisk `http://localhost:5173`)
 3. Åbn URL'en i din browser – nu ser du React‑appen (navbar, forside med kampagner osv.)
 
@@ -34,5 +38,19 @@ Projektet er bygget med **React** og **Vite**.
   - gør det nemt senere at lave en optimeret build til produktion.
 
 Kombinationen af React + Vite gør det hurtigt at udvikle og nemt at køre projektet uden selv at sætte Webpack eller andre bundlere op.
+
+## Linting og formatering
+
+Kør disse kommandoer fra projektets rodmappe (`Donationsplatform`):
+
+```bash
+npm run lint
+npm run lint:fix
+npm run format
+```
+
+- `npm run lint` kører Standard på hele projektet
+- `npm run lint:fix` retter automatisk de fleste lint-fejl
+- `npm run format` kører Prettier på hele projektet
 
 ## AI prompt
