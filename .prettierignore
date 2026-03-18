@@ -1,6 +1,0 @@
-node_modules
-Backend/node_modules
-dist
-build
-coverage
-*.db
