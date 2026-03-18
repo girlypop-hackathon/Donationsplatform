@@ -5,8 +5,8 @@ const path = require('path')
 const databasePath = path.join(__dirname, 'donations.db')
 const db = new sqlite3.Database(databasePath, (err) => {
   if (err) {
-    console.error('Database connection error:', err.message);
-    return;
+    console.error('Database connection error:', err.message)
+    return
   }
   console.log('Connected to the donations database.')
 })
@@ -68,55 +68,72 @@ db.serialize(() => {
     FOREIGN KEY (campaign_id) REFERENCES campaigns (campaign_id)
   )`)
 
-  console.log('Tables created or already exist.');
+  console.log('Tables created or already exist.')
 
   ensureProviderIdColumn(db, () => {
     ensureAmountRaisedColumn(db, () => {
       // Check if data already exists before inserting
       db.get('SELECT COUNT(*) as count FROM providers', [], (err, row) => {
         if (err) {
-          console.error('Error checking providers:', err.message);
-          return;
+          console.error('Error checking providers:', err.message)
+          return
         }
 
         if (row.count === 0) {
-          console.log('No data found. Inserting sample data...');
-          insertSampleData(db);
+          console.log('No data found. Inserting sample data...')
+          insertSampleData(db)
         } else {
-          console.log(`Database already contains ${row.count} organizations. No data inserted.`);
+          console.log(
+            `Database already contains ${row.count} organizations. No data inserted.`
+          )
           closeDatabase()
         }
-      });
+      })
     })
   })
-});
+})
 
-function ensureProviderIdColumn (db, done) {
+function ensureProviderIdColumn(db, done) {
   db.all('PRAGMA table_info(campaigns)', [], (err, columns) => {
     if (err) {
-      console.error('Error reading campaigns schema for provider_id:', err.message)
+      console.error(
+        'Error reading campaigns schema for provider_id:',
+        err.message
+      )
       if (done) done()
       return
     }
 
     if (row.count === 0) {
-      console.log('No data found. Inserting sample data...');
-      insertSampleData(db, closeDatabaseConnection);
+      console.log('No data found. Inserting sample data...')
+      insertSampleData(db, closeDatabaseConnection)
     } else {
-      console.log(`Database already contains ${row.count} providers. No data inserted.`);
-      closeDatabaseConnection();
+      console.log(
+        `Database already contains ${row.count} providers. No data inserted.`
+      )
+      closeDatabaseConnection()
     }
 
-    const hasProviderId = columns.some((column) => column.name === 'provider_id')
-    const hasOrganizationId = columns.some((column) => column.name === 'organization_id')
+    const hasProviderId = columns.some(
+      (column) => column.name === 'provider_id'
+    )
+    const hasOrganizationId = columns.some(
+      (column) => column.name === 'organization_id'
+    )
 
     if (hasProviderId && hasOrganizationId) {
-      db.run('UPDATE campaigns SET provider_id = organization_id WHERE provider_id IS NULL OR provider_id = 0', (backfillErr) => {
-        if (backfillErr) {
-          console.error('Error backfilling provider_id values:', backfillErr.message)
+      db.run(
+        'UPDATE campaigns SET provider_id = organization_id WHERE provider_id IS NULL OR provider_id = 0',
+        (backfillErr) => {
+          if (backfillErr) {
+            console.error(
+              'Error backfilling provider_id values:',
+              backfillErr.message
+            )
+          }
+          if (done) done()
         }
-        if (done) done()
-      })
+      )
       return
     }
 
@@ -125,31 +142,40 @@ function ensureProviderIdColumn (db, done) {
       return
     }
 
-    db.run('ALTER TABLE campaigns ADD COLUMN provider_id INTEGER', (alterErr) => {
-      if (alterErr) {
-        console.error('Error adding provider_id column:', alterErr.message)
-        if (done) done()
-        return
-      }
-
-      if (!hasOrganizationId) {
-        if (done) done()
-        return
-      }
-
-      db.run('UPDATE campaigns SET provider_id = organization_id', (updateErr) => {
-        if (updateErr) {
-          console.error('Error copying organization_id to provider_id:', updateErr.message)
-        } else {
-          console.log('Added and backfilled provider_id column.')
+    db.run(
+      'ALTER TABLE campaigns ADD COLUMN provider_id INTEGER',
+      (alterErr) => {
+        if (alterErr) {
+          console.error('Error adding provider_id column:', alterErr.message)
+          if (done) done()
+          return
         }
-        if (done) done()
-      })
-    })
+
+        if (!hasOrganizationId) {
+          if (done) done()
+          return
+        }
+
+        db.run(
+          'UPDATE campaigns SET provider_id = organization_id',
+          (updateErr) => {
+            if (updateErr) {
+              console.error(
+                'Error copying organization_id to provider_id:',
+                updateErr.message
+              )
+            } else {
+              console.log('Added and backfilled provider_id column.')
+            }
+            if (done) done()
+          }
+        )
+      }
+    )
   })
 }
 
-function ensureAmountRaisedColumn (db, done) {
+function ensureAmountRaisedColumn(db, done) {
   db.all('PRAGMA table_info(campaigns)', [], (err, columns) => {
     if (err) {
       console.error('Error reading campaigns schema:', err.message)
@@ -157,7 +183,9 @@ function ensureAmountRaisedColumn (db, done) {
       return
     }
 
-    const hasAmountRaised = columns.some((column) => column.name === 'amount_raised')
+    const hasAmountRaised = columns.some(
+      (column) => column.name === 'amount_raised'
+    )
     if (columns.length === 0) {
       if (done) done()
       return
@@ -168,31 +196,37 @@ function ensureAmountRaisedColumn (db, done) {
       return
     }
 
-    db.run('ALTER TABLE campaigns ADD COLUMN amount_raised REAL DEFAULT 0', (alterErr) => {
-      if (alterErr) {
-        console.error('Error adding amount_raised column:', alterErr.message)
-        if (done) done()
-        return
-      }
+    db.run(
+      'ALTER TABLE campaigns ADD COLUMN amount_raised REAL DEFAULT 0',
+      (alterErr) => {
+        if (alterErr) {
+          console.error('Error adding amount_raised column:', alterErr.message)
+          if (done) done()
+          return
+        }
 
-      db.run(
-        `UPDATE campaigns
+        db.run(
+          `UPDATE campaigns
          SET amount_raised = COALESCE(
            (SELECT SUM(amount) FROM donations WHERE donations.campaign_id = campaigns.campaign_id),
            0
          )`,
-        (updateErr) => {
-          if (updateErr) {
-            console.error('Error backfilling amount_raised values:', updateErr.message)
-            if (done) done()
-            return
-          }
+          (updateErr) => {
+            if (updateErr) {
+              console.error(
+                'Error backfilling amount_raised values:',
+                updateErr.message
+              )
+              if (done) done()
+              return
+            }
 
-          console.log('Added and backfilled amount_raised column.')
-          if (done) done()
-        }
-      )
-    })
+            console.log('Added and backfilled amount_raised column.')
+            if (done) done()
+          }
+        )
+      }
+    )
   })
 }
 
@@ -245,17 +279,65 @@ function insertSampleData(db, onComplete) {
 
   // Insert campaigns
   const campaigns = [
-    { provider_id: 1, image: 'campaign1.jpg', campaign_bio: 'Help save abandoned pets.', body_text: 'Detailed description...', goal_amount: 5000, milestone_1: 1000, milestone_2: 2500, milestone_3: 4000 },
-    { provider_id: 2, image: 'campaign2.jpg', campaign_bio: 'Support wildlife conservation.', body_text: 'Detailed description...', goal_amount: 10000, milestone_1: 2000, milestone_2: 5000, milestone_3: 8000 },
-    { provider_id: 3, image: 'campaign3.jpg', campaign_bio: 'Aid animal shelters.', body_text: 'Detailed description...', goal_amount: 3000, milestone_1: 500, milestone_2: 1500, milestone_3: 2500 },
-    { provider_id: 4, image: 'campaign4.jpg', campaign_bio: 'Protect endangered species.', body_text: 'Detailed description...', goal_amount: 15000, milestone_1: 3000, milestone_2: 7500, milestone_3: 12000 }
-  ];
+    {
+      provider_id: 1,
+      image: 'campaign1.jpg',
+      campaign_bio: 'Help save abandoned pets.',
+      body_text: 'Detailed description...',
+      goal_amount: 5000,
+      milestone_1: 1000,
+      milestone_2: 2500,
+      milestone_3: 4000
+    },
+    {
+      provider_id: 2,
+      image: 'campaign2.jpg',
+      campaign_bio: 'Support wildlife conservation.',
+      body_text: 'Detailed description...',
+      goal_amount: 10000,
+      milestone_1: 2000,
+      milestone_2: 5000,
+      milestone_3: 8000
+    },
+    {
+      provider_id: 3,
+      image: 'campaign3.jpg',
+      campaign_bio: 'Aid animal shelters.',
+      body_text: 'Detailed description...',
+      goal_amount: 3000,
+      milestone_1: 500,
+      milestone_2: 1500,
+      milestone_3: 2500
+    },
+    {
+      provider_id: 4,
+      image: 'campaign4.jpg',
+      campaign_bio: 'Protect endangered species.',
+      body_text: 'Detailed description...',
+      goal_amount: 15000,
+      milestone_1: 3000,
+      milestone_2: 7500,
+      milestone_3: 12000
+    }
+  ]
 
-  const campaignStmt = db.prepare('INSERT INTO campaigns (provider_id, image, campaign_bio, body_text, goal_amount, amount_raised, milestone_1, milestone_2, milestone_3) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
-  campaigns.forEach(campaign => {
-    campaignStmt.run(campaign.provider_id, campaign.image, campaign.campaign_bio, campaign.body_text, campaign.goal_amount, 0, campaign.milestone_1, campaign.milestone_2, campaign.milestone_3);
-  });
-  campaignStmt.finalize();
+  const campaignStmt = db.prepare(
+    'INSERT INTO campaigns (provider_id, image, campaign_bio, body_text, goal_amount, amount_raised, milestone_1, milestone_2, milestone_3) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+  )
+  campaigns.forEach((campaign) => {
+    campaignStmt.run(
+      campaign.provider_id,
+      campaign.image,
+      campaign.campaign_bio,
+      campaign.body_text,
+      campaign.goal_amount,
+      0,
+      campaign.milestone_1,
+      campaign.milestone_2,
+      campaign.milestone_3
+    )
+  })
+  campaignStmt.finalize()
 
   // Insert donations
   const donations = [
@@ -340,7 +422,7 @@ function insertSampleData(db, onComplete) {
   })
 }
 
-function closeDatabase () {
+function closeDatabase() {
   db.close((err) => {
     if (err) {
       console.error('Error closing database:', err.message)

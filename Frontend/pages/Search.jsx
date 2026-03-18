@@ -1,4 +1,4 @@
-import React from "react"
+import React from 'react'
 
 function Search() {
   return (
@@ -6,8 +6,8 @@ function Search() {
       <h1>Search Campaigns</h1>
       <p>Type a keyword to find campaigns.</p>
       <form>
-        <input type="text" placeholder="Search campaigns" />
-        <button type="submit">Search</button>
+        <input type='text' placeholder='Search campaigns' />
+        <button type='submit'>Search</button>
       </form>
     </section>
   )

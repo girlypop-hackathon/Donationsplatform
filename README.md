@@ -26,9 +26,7 @@ Projektet er bygget med **React** og **Vite**.
    ```
 2. Åbn`http://localhost:5173`
 
-
 ### Backend server
-
 
 ## Linting og formatering
 
@@ -46,4 +44,5 @@ npm run format
 - `npm run format` kører Prettier på hele projektet
 
 ## AI prompt
+
 spec kit - hvordan foreslår de at man udvikler med AI. Laver kravspekifekation og man vericiferer

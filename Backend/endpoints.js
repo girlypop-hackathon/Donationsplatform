@@ -397,19 +397,17 @@ app.get('/api/users', async (request, response) => {
 // Additional endpoints for better API coverage
 
 // GET campaigns by provider ID
-app.get('/api/providers/:id/campaigns', (req, res) => {
-  const providerId = Number(req.params.id);
+app.get('/api/providers/:id/campaigns', async (request, response) => {
+  try {
+    const providerId = Number(request.params.id);
 
-  if (!Number.isFinite(providerId) || providerId <= 0) {
-    return res.status(400).json({ error: 'Valid provider id is required' });
-  }
-
-  db.all(queries.getCampaignsByProvider, [providerId], (err, rows) => {
-    if (err) {
-      res.status(500).json({ error: err.message });
+    if (!Number.isFinite(providerId) || providerId <= 0) {
+      response.status(400).json({ error: 'Valid provider id is required' });
       return;
     }
-    res.json({
+
+    const rows = await getManyRows(queries.getCampaignsByProvider, [providerId]);
+    response.json({
       success: true,
       data: rows
     });
@@ -433,16 +431,19 @@ app.get('/api/campaigns/:id/donations', async (request, response) => {
 });
 
 // GET provider by ID
-app.get('/api/providers/:id', (req, res) => {
-  const providerId = Number(req.params.id);
+app.get('/api/providers/:id', async (request, response) => {
+  try {
+    const providerId = Number(request.params.id);
 
-  if (!Number.isFinite(providerId) || providerId <= 0) {
-    return res.status(400).json({ error: 'Valid provider id is required' });
-  }
+    if (!Number.isFinite(providerId) || providerId <= 0) {
+      response.status(400).json({ error: 'Valid provider id is required' });
+      return;
+    }
 
-  db.get(queries.getProviderById, [providerId], (err, row) => {
-    if (err) {
-      res.status(500).json({ error: err.message });
+    const row = await getSingleRow(queries.getProviderById, [providerId]);
+
+    if (!row) {
+      response.status(404).json({ error: 'Provider not found' });
       return;
     }
 

@@ -1,4 +1,4 @@
-import React from "react"
+import React from 'react'
 
 function SignIn() {
   return (
@@ -6,18 +6,18 @@ function SignIn() {
       <h1>Sign In</h1>
       <form>
         <p>
-          <label htmlFor="email">Email</label>
+          <label htmlFor='email'>Email</label>
           <br />
-          <input id="email" type="email" placeholder="name@example.com" />
+          <input id='email' type='email' placeholder='name@example.com' />
         </p>
 
         <p>
-          <label htmlFor="password">Password</label>
+          <label htmlFor='password'>Password</label>
           <br />
-          <input id="password" type="password" placeholder="Password" />
+          <input id='password' type='password' placeholder='Password' />
         </p>
 
-        <button type="submit">Sign In</button>
+        <button type='submit'>Sign In</button>
       </form>
     </section>
   )

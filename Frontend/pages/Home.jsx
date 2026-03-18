@@ -126,24 +126,6 @@ function Home () {
             ))}
           </div>
         )}
-      <section className="campaign-grid">
-
-        <CampaignCard 
-          image="/images/elderly-couple.jpg"
-          title="Support for Elderly Couple"
-          description="Help provide care and support for an elderly couple in need."
-        />
-        <CampaignCard 
-          image="/images/animal-rescue.jpg"
-          title="Animal Rescue Fund"
-          description="Help rescue and care for animals in distress."
-        />
-        <CampaignCard 
-          image="/images/hospital-patient.jpg"
-          title="Medical Support Campaign"
-          description="Support for a person in hospital needing medical care."
-        />
-
       </section>
     </div>
   )
