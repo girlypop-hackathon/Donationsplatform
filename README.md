@@ -24,20 +24,11 @@ Projektet er bygget med **React** og **Vite**.
    ```bash
    npm run dev
    ```
-2. Terminalen viser en URL (typisk `http://localhost:5173`)
-3. Åbn URL'en i din browser – nu ser du React‑appen (navbar, forside med kampagner osv.)
+2. Åbn`http://localhost:5173`
 
-> **Vigtigt:** Åbn ikke `index.html` direkte i browseren. Brug altid `npm run dev`, så Vite kan bygge og serve appen korrekt.
 
-## Hvorfor Vite og React?
+### Backend server
 
-- **React** bruges til at bygge brugergrænsefladen som genanvendelige komponenter (Navbar, CampaignCard, sider osv.).
-- **Vite** er en moderne udviklingsserver og bundler, som:
-  - giver hurtig start og hot reload (ændringer i koden vises straks i browseren)
-  - håndterer JavaScript‑moduler, JSX og import af filer automatisk
-  - gør det nemt senere at lave en optimeret build til produktion.
-
-Kombinationen af React + Vite gør det hurtigt at udvikle og nemt at køre projektet uden selv at sætte Webpack eller andre bundlere op.
 
 ## Linting og formatering
 
