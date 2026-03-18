@@ -44,6 +44,7 @@ Kombinationen af React + Vite gør det hurtigt at udvikle og nemt at køre proje
 Kør disse kommandoer fra projektets rodmappe (`Donationsplatform`):
 
 ```bash
+npm install
 npm run lint
 npm run lint:fix
 npm run format
