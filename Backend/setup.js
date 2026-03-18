@@ -1,7 +1,9 @@
 const sqlite3 = require('sqlite3').verbose()
+const path = require('path')
 
 // Create database connection
-const db = new sqlite3.Database('./donations.db', (err) => {
+const databasePath = path.join(__dirname, 'donations.db')
+const db = new sqlite3.Database(databasePath, (err) => {
   if (err) {
     console.error('Database connection error:', err.message);
     return;
@@ -68,6 +70,7 @@ db.serialize(() => {
       insertSampleData(db);
     } else {
       console.log(`Database already contains ${row.count} organizations. No data inserted.`);
+      closeDatabase()
     }
   });
 });
@@ -200,16 +203,23 @@ function insertSampleData(db) {
   emailTemplates.forEach((template) => {
     templateStmt.run(template.level, template.template_text)
   })
-  templateStmt.finalize()
+  templateStmt.finalize((err) => {
+    if (err) {
+      console.error('Error finalizing template insert:', err.message)
+    } else {
+      console.log('Data inserted.')
+    }
 
-  console.log('Data inserted.')
+    closeDatabase()
+  })
 }
 
-// Close database
-db.close((err) => {
-  if (err) {
-    console.error('Error closing database:', err.message);
-  } else {
-    console.log('Database connection closed.');
-  }
-});
+function closeDatabase () {
+  db.close((err) => {
+    if (err) {
+      console.error('Error closing database:', err.message)
+    } else {
+      console.log('Database connection closed.')
+    }
+  })
+}
