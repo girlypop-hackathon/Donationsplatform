@@ -1,7 +1,7 @@
 # Donation Platform API Documentation
 
 ## Overview
-This API provides endpoints for accessing data from the donation platform database, including organizations, campaigns, and users.
+This API provides endpoints for accessing data from the donation platform database, including providers (both organizations and individuals), campaigns, and users.
 
 ## Setup
 
@@ -38,8 +38,8 @@ The server will run on `http://localhost:3000`
 http://localhost:3000/api
 ```
 
-### 1. GET /organizations
-Returns all organizations in the system.
+### 1. GET /providers
+Returns all providers in the system (both organizations and individuals).
 
 **Response:**
 ```json
@@ -51,7 +51,16 @@ Returns all organizations in the system.
       "name": "Dyrenes Beskyttelse",
       "logo": "logo1.png",
       "bio": "Dedicated to animal protection in Denmark.",
-      "website_link": "https://www.dyrenesbeskyttelse.dk"
+      "website_link": "https://www.dyrenesbeskyttelse.dk",
+      "is_organization": true
+    },
+    {
+      "organization_id": 2,
+      "name": "John Doe",
+      "logo": null,
+      "bio": "Private person supporting animal causes.",
+      "website_link": null,
+      "is_organization": false
     },
     ...
   ]
@@ -68,7 +77,7 @@ Returns all campaigns in the system.
   "data": [
     {
       "campaign_id": 1,
-      "organization_id": 1,
+      "provider_id": 1,
       "image": "campaign1.jpg",
       "campaign_bio": "Help save abandoned pets.",
       "body_text": "Detailed description...",
@@ -99,11 +108,11 @@ Returns all unique users who have made donations.
 }
 ```
 
-### 4. GET /organizations/:id
-Returns a specific organization by ID.
+### 4. GET /providers/:id
+Returns a specific provider by ID.
 
 **Parameters:**
-- `id` (URL parameter) - Organization ID
+- `id` (URL parameter) - Provider ID
 
 **Response:**
 ```json
@@ -114,7 +123,8 @@ Returns a specific organization by ID.
     "name": "Dyrenes Beskyttelse",
     "logo": "logo1.png",
     "bio": "Dedicated to animal protection in Denmark.",
-    "website_link": "https://www.dyrenesbeskyttelse.dk"
+    "website_link": "https://www.dyrenesbeskyttelse.dk",
+    "is_organization": true
   }
 }
 ```
@@ -131,7 +141,7 @@ Returns a specific campaign by ID.
   "success": true,
   "data": {
     "campaign_id": 1,
-    "organization_id": 1,
+    "provider_id": 1,
     "image": "campaign1.jpg",
     "campaign_bio": "Help save abandoned pets.",
     "body_text": "Detailed description...",
@@ -143,11 +153,11 @@ Returns a specific campaign by ID.
 }
 ```
 
-### 6. GET /organizations/:id/campaigns
-Returns all campaigns for a specific organization.
+### 6. GET /providers/:id/campaigns
+Returns all campaigns for a specific provider.
 
 **Parameters:**
-- `id` (URL parameter) - Organization ID
+- `id` (URL parameter) - Provider ID
 
 **Response:**
 ```json
@@ -156,7 +166,7 @@ Returns all campaigns for a specific organization.
   "data": [
     {
       "campaign_id": 1,
-      "organization_id": 1,
+      "provider_id": 1,
       "image": "campaign1.jpg",
       "campaign_bio": "Help save abandoned pets.",
       "body_text": "Detailed description...",
@@ -196,11 +206,79 @@ Returns all donations for a specific campaign.
 }
 ```
 
+## POST Endpoints
+
+### 8. POST /providers
+Creates a new provider (organization or individual).
+
+**Request Body:**
+```json
+{
+  "name": "Provider Name",
+  "logo": "logo.png",
+  "bio": "Description of the provider",
+  "website_link": "https://example.com",
+  "is_organization": true
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "provider_id": 5,
+    "name": "Provider Name",
+    "logo": "logo.png",
+    "bio": "Description of the provider",
+    "website_link": "https://example.com",
+    "is_organization": true
+  }
+}
+```
+
+### 9. POST /campaigns
+Creates a new campaign for a provider.
+
+**Request Body:**
+```json
+{
+  "provider_id": 1,
+  "image": "campaign.jpg",
+  "campaign_bio": "Short description",
+  "body_text": "Detailed description",
+  "goal_amount": 10000,
+  "milestone_1": 2000,
+  "milestone_2": 5000,
+  "milestone_3": 8000
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "campaign_id": 5,
+    "provider_id": 1,
+    "image": "campaign.jpg",
+    "campaign_bio": "Short description",
+    "body_text": "Detailed description",
+    "goal_amount": 10000,
+    "milestone_1": 2000,
+    "milestone_2": 5000,
+    "milestone_3": 8000
+  }
+}
+```
+
 ## Error Handling
 
 The API returns appropriate HTTP status codes and error messages:
 
 - `200 OK` - Successful request
+- `201 Created` - Resource created successfully
+- `400 Bad Request` - Invalid request data
 - `404 Not Found` - Resource not found
 - `500 Internal Server Error` - Server error
 
@@ -213,16 +291,17 @@ Error response format:
 
 ## Database Schema
 
-### Organizations Table
+### Providers Table (formerly Organizations)
 - `organization_id` (INTEGER, PRIMARY KEY)
 - `name` (TEXT)
 - `logo` (TEXT)
 - `bio` (TEXT)
 - `website_link` (TEXT)
+- `is_organization` (BOOLEAN) - NEW: true for organizations, false for individuals
 
 ### Campaigns Table
 - `campaign_id` (INTEGER, PRIMARY KEY)
-- `organization_id` (INTEGER, FOREIGN KEY)
+- `provider_id` (INTEGER, FOREIGN KEY) - UPDATED: references providers.organization_id
 - `image` (TEXT)
 - `campaign_bio` (TEXT)
 - `body_text` (TEXT)
@@ -231,7 +310,7 @@ Error response format:
 - `milestone_2` (INTEGER)
 - `milestone_3` (INTEGER)
 
-### Donations Table (used for users)
+### Donations Table
 - `donation_id` (INTEGER, PRIMARY KEY)
 - `campaign_id` (INTEGER, FOREIGN KEY)
 - `user_name` (TEXT)
@@ -240,6 +319,23 @@ Error response format:
 - `is_subscription` (BOOLEAN)
 - `amount` (REAL)
 - `general_newsletter` (BOOLEAN)
+
+## Key Changes from Previous Version
+
+### 1. Organizations → Providers
+- Table renamed from `organizations` to `providers`
+- All endpoints updated from `/organizations` to `/providers`
+- Foreign key in campaigns table changed from `organization_id` to `provider_id`
+
+### 2. New Field: is_organization
+- Added `is_organization` BOOLEAN field to providers table
+- `true` = Organization (default)
+- `false` = Private individual
+- Allows both organizations and private persons to create campaigns
+
+### 3. New POST Endpoints
+- `POST /api/providers` - Create new provider
+- `POST /api/campaigns` - Create new campaign
 
 ## Project Structure
 
@@ -250,18 +346,29 @@ Backend/
 ├── queries.js           # SQL queries
 ├── package.json         # Project dependencies
 ├── API_DOCUMENTATION.md # This documentation
-└── test_endpoints.js    # Test script
+└── ...
 ```
 
-## Testing
+## Testing the API
 
-Run the test script to verify all endpoints are working:
+### Test POST endpoints with curl:
 
 ```bash
-node test_endpoints.js
-```
+# Create a new provider (organization)
+curl -X POST http://localhost:3000/api/providers \
+  -H "Content-Type: application/json" \
+  -d '{"name": "New Organization", "is_organization": true}'
 
-Note: Make sure the server is running before running tests.
+# Create a new provider (individual)
+curl -X POST http://localhost:3000/api/providers \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Jane Smith", "is_organization": false}'
+
+# Create a new campaign
+curl -X POST http://localhost:3000/api/campaigns \
+  -H "Content-Type: application/json" \
+  -d '{"provider_id": 1, "campaign_bio": "New Campaign", "goal_amount": 5000}'
+```
 
 ## Development
 

@@ -4,7 +4,6 @@ Af: Linea
 Beskrivelse: API endpoints for the donation platform
 */
 
-
 // endpoints.js - API endpoints for the donation platform
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
@@ -39,9 +38,9 @@ app.use((req, res, next) => {
   next();
 });
 
-// GET all organizations
-app.get('/api/organizations', (req, res) => {
-  db.all(queries.getAllOrganizations, [], (err, rows) => {
+// GET all providers
+app.get('/api/providers', (req, res) => {
+  db.all(queries.getAllProviders, [], (err, rows) => {
     if (err) {
       res.status(500).json({ error: err.message });
       return;
@@ -83,10 +82,10 @@ app.get('/api/users', (req, res) => {
 
 // Additional endpoints for better API coverage
 
-// GET campaigns by organization ID
-app.get('/api/organizations/:id/campaigns', (req, res) => {
-  const organizationId = req.params.id;
-  db.all(queries.getCampaignsByOrganization, [organizationId], (err, rows) => {
+// GET campaigns by provider ID
+app.get('/api/providers/:id/campaigns', (req, res) => {
+  const providerId = req.params.id;
+  db.all(queries.getCampaignsByProvider, [providerId], (err, rows) => {
     if (err) {
       res.status(500).json({ error: err.message });
       return;
@@ -113,16 +112,16 @@ app.get('/api/campaigns/:id/donations', (req, res) => {
   });
 });
 
-// GET organization by ID
-app.get('/api/organizations/:id', (req, res) => {
-  const organizationId = req.params.id;
-  db.get(queries.getOrganizationById, [organizationId], (err, row) => {
+// GET provider by ID
+app.get('/api/providers/:id', (req, res) => {
+  const providerId = req.params.id;
+  db.get(queries.getProviderById, [providerId], (err, row) => {
     if (err) {
       res.status(500).json({ error: err.message });
       return;
     }
     if (!row) {
-      res.status(404).json({ error: 'Organization not found' });
+      res.status(404).json({ error: 'Provider not found' });
       return;
     }
     res.json({
@@ -147,6 +146,65 @@ app.get('/api/campaigns/:id', (req, res) => {
     res.json({
       success: true,
       data: row
+    });
+  });
+});
+
+// POST endpoints
+
+// POST create new provider
+app.post('/api/providers', (req, res) => {
+  const { name, logo, bio, website_link, is_organization } = req.body;
+  
+  if (!name) {
+    return res.status(400).json({ error: 'Name is required' });
+  }
+  
+  db.run(queries.createProvider, [name, logo, bio, website_link, is_organization || true], function(err) {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    res.status(201).json({
+      success: true,
+      data: {
+        provider_id: this.lastID,
+        name,
+        logo,
+        bio,
+        website_link,
+        is_organization: is_organization || true
+      }
+    });
+  });
+});
+
+// POST create new campaign
+app.post('/api/campaigns', (req, res) => {
+  const { provider_id, image, campaign_bio, body_text, goal_amount, milestone_1, milestone_2, milestone_3 } = req.body;
+  
+  if (!provider_id || !campaign_bio || !goal_amount) {
+    return res.status(400).json({ error: 'provider_id, campaign_bio, and goal_amount are required' });
+  }
+  
+  db.run(queries.createCampaign, [provider_id, image, campaign_bio, body_text, goal_amount, milestone_1, milestone_2, milestone_3], function(err) {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    res.status(201).json({
+      success: true,
+      data: {
+        campaign_id: this.lastID,
+        provider_id,
+        image,
+        campaign_bio,
+        body_text,
+        goal_amount,
+        milestone_1,
+        milestone_2,
+        milestone_3
+      }
     });
   });
 });

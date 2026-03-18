@@ -13,19 +13,20 @@ const db = new sqlite3.Database(databasePath, (err) => {
 
 // Create tables
 db.serialize(() => {
-  // Organizations table
-  db.run(`CREATE TABLE IF NOT EXISTS organizations (
+  // Providers table
+  db.run(`CREATE TABLE IF NOT EXISTS providers (
     organization_id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     logo TEXT,
     bio TEXT,
-    website_link TEXT
+    website_link TEXT,
+    is_organization BOOLEAN
   )`)
 
   // Campaigns table
   db.run(`CREATE TABLE IF NOT EXISTS campaigns (
     campaign_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    organization_id INTEGER,
+    provider_id INTEGER,
     image TEXT,
     campaign_bio TEXT,
     body_text TEXT,
@@ -33,7 +34,7 @@ db.serialize(() => {
     milestone_1 INTEGER,
     milestone_2 INTEGER,
     milestone_3 INTEGER,
-    FOREIGN KEY (organization_id) REFERENCES organizations (organization_id)
+    FOREIGN KEY (provider_id) REFERENCES providers (organization_id)
   )`)
 
   // Donations table
@@ -59,9 +60,9 @@ db.serialize(() => {
   console.log('Tables created or already exist.');
 
   // Check if data already exists before inserting
-  db.get('SELECT COUNT(*) as count FROM organizations', [], (err, row) => {
+  db.get('SELECT COUNT(*) as count FROM providers', [], (err, row) => {
     if (err) {
-      console.error('Error checking organizations:', err.message);
+      console.error('Error checking providers:', err.message);
       return;
     }
 
@@ -76,58 +77,63 @@ db.serialize(() => {
 });
 
 function insertSampleData(db) {
-  // Insert organizations
-  const organizations = [
+  // Insert providers
+  const providers = [
     {
       name: 'Dyrenes Beskyttelse',
       logo: 'logo1.png',
       bio: 'Dedicated to animal protection in Denmark.',
-      website_link: 'https://www.dyrenesbeskyttelse.dk'
+      website_link: 'https://www.dyrenesbeskyttelse.dk',
+      is_organization: true
     },
     {
       name: 'Dyreværnet',
       logo: 'logo2.png',
       bio: 'Working for animal welfare and rights.',
-      website_link: 'https://www.dyreværnet.dk'
+      website_link: 'https://www.dyreværnet.dk',
+      is_organization: true
     },
     {
       name: 'OSA',
       logo: 'logo3.png',
       bio: 'Organization for animal shelters.',
-      website_link: 'https://www.osa.dk'
+      website_link: 'https://www.osa.dk',
+      is_organization: true
     },
     {
       name: 'WWF',
       logo: 'logo4.png',
       bio: 'World Wildlife Fund for conservation.',
-      website_link: 'https://www.wwf.org'
+      website_link: 'https://www.wwf.org',
+      is_organization: true
     }
   ]
 
-  const organizationStmt = db.prepare(
-    'INSERT INTO organizations (name, logo, bio, website_link) VALUES (?, ?, ?, ?)'
+  const providerStmt = db.prepare(
+    'INSERT INTO providers (name, logo, bio, website_link, is_organization) VALUES (?, ?, ?, ?, ?)'
   )
-  organizations.forEach((organization) => {
-    organizationStmt.run(
-      organization.name,
-      organization.logo,
-      organization.bio,
-      organization.website_link
+  providers.forEach((provider) => {
+    providerStmt.run(
+      provider.name,
+      provider.logo,
+      provider.bio,
+      provider.website_link,
+      provider.is_organization
     )
   })
-  organizationStmt.finalize()
+  providerStmt.finalize()
 
   // Insert campaigns
   const campaigns = [
-    { organization_id: 1, image: 'campaign1.jpg', campaign_bio: 'Help save abandoned pets.', body_text: 'Detailed description...', goal_amount: 5000, milestone_1: 1000, milestone_2: 2500, milestone_3: 4000 },
-    { organization_id: 2, image: 'campaign2.jpg', campaign_bio: 'Support wildlife conservation.', body_text: 'Detailed description...', goal_amount: 10000, milestone_1: 2000, milestone_2: 5000, milestone_3: 8000 },
-    { organization_id: 3, image: 'campaign3.jpg', campaign_bio: 'Aid animal shelters.', body_text: 'Detailed description...', goal_amount: 3000, milestone_1: 500, milestone_2: 1500, milestone_3: 2500 },
-    { organization_id: 4, image: 'campaign4.jpg', campaign_bio: 'Protect endangered species.', body_text: 'Detailed description...', goal_amount: 15000, milestone_1: 3000, milestone_2: 7500, milestone_3: 12000 }
+    { provider_id: 1, image: 'campaign1.jpg', campaign_bio: 'Help save abandoned pets.', body_text: 'Detailed description...', goal_amount: 5000, milestone_1: 1000, milestone_2: 2500, milestone_3: 4000 },
+    { provider_id: 2, image: 'campaign2.jpg', campaign_bio: 'Support wildlife conservation.', body_text: 'Detailed description...', goal_amount: 10000, milestone_1: 2000, milestone_2: 5000, milestone_3: 8000 },
+    { provider_id: 3, image: 'campaign3.jpg', campaign_bio: 'Aid animal shelters.', body_text: 'Detailed description...', goal_amount: 3000, milestone_1: 500, milestone_2: 1500, milestone_3: 2500 },
+    { provider_id: 4, image: 'campaign4.jpg', campaign_bio: 'Protect endangered species.', body_text: 'Detailed description...', goal_amount: 15000, milestone_1: 3000, milestone_2: 7500, milestone_3: 12000 }
   ];
 
-  const campaignStmt = db.prepare('INSERT INTO campaigns (organization_id, image, campaign_bio, body_text, goal_amount, milestone_1, milestone_2, milestone_3) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+  const campaignStmt = db.prepare('INSERT INTO campaigns (provider_id, image, campaign_bio, body_text, goal_amount, milestone_1, milestone_2, milestone_3) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
   campaigns.forEach(campaign => {
-    campaignStmt.run(campaign.organization_id, campaign.image, campaign.campaign_bio, campaign.body_text, campaign.goal_amount, campaign.milestone_1, campaign.milestone_2, campaign.milestone_3);
+    campaignStmt.run(campaign.provider_id, campaign.image, campaign.campaign_bio, campaign.body_text, campaign.goal_amount, campaign.milestone_1, campaign.milestone_2, campaign.milestone_3);
   });
   campaignStmt.finalize();
 
