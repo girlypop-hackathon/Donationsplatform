@@ -4,7 +4,6 @@ Af: Linea
 Beskrivelse: API endpoints for the donation platform
 */
 
-
 // endpoints.js - API endpoints for the donation platform
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
@@ -225,10 +224,10 @@ ensureCampaignEventTable().catch((error) => {
   console.error('Failed to create campaign event table:', error.message);
 });
 
-// GET all organizations
-app.get('/api/organizations', async (request, response) => {
+// GET all providers
+app.get('/api/providers', async (request, response) => {
   try {
-    const rows = await getManyRows(queries.getAllOrganizations);
+    const rows = await getManyRows(queries.getAllProviders);
     response.json({
       success: true,
       data: rows
@@ -266,11 +265,11 @@ app.get('/api/users', async (request, response) => {
 
 // Additional endpoints for better API coverage
 
-// GET campaigns by organization ID
-app.get('/api/organizations/:id/campaigns', async (request, response) => {
+// GET campaigns by provider ID
+app.get('/api/providers/:id/campaigns', async (request, response) => {
   try {
-    const organizationId = request.params.id;
-    const rows = await getManyRows(queries.getCampaignsByOrganization, [organizationId]);
+    const providerId = request.params.id;
+    const rows = await getManyRows(queries.getCampaignsByProvider, [providerId]);
     response.json({
       success: true,
       data: rows
@@ -294,14 +293,14 @@ app.get('/api/campaigns/:id/donations', async (request, response) => {
   }
 });
 
-// GET organization by ID
-app.get('/api/organizations/:id', async (request, response) => {
+// GET provider by ID
+app.get('/api/providers/:id', async (request, response) => {
   try {
-    const organizationId = request.params.id;
-    const row = await getSingleRow(queries.getOrganizationById, [organizationId]);
+    const providerId = request.params.id;
+    const row = await getSingleRow(queries.getProviderById, [providerId]);
 
     if (!row) {
-      response.status(404).json({ error: 'Organization not found' });
+      response.status(404).json({ error: 'Provider not found' });
       return;
     }
 
@@ -315,19 +314,30 @@ app.get('/api/organizations/:id', async (request, response) => {
 });
 
 // GET campaign by ID
-app.get('/api/campaigns/:id', async (request, response) => {
-  try {
-    const campaignId = request.params.id;
-    const row = await getSingleRow(queries.getCampaignById, [campaignId]);
-
-    if (!row) {
-      response.status(404).json({ error: 'Campaign not found' });
+app.get('/api/campaigns/:id', (req, res) => {
+  const campaignId = req.params.id;
+  db.get(queries.getCampaignById, [campaignId], (err, row) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
       return;
     }
-
-    response.json({
+    if (!row) {
+      res.status(404).json({ error: 'Campaign not found' });
+      return;
+    }
+    res.json({
       success: true,
-      data: row
+      data: {
+        campaign_id: this.lastID,
+        provider_id,
+        image,
+        campaign_bio,
+        body_text,
+        goal_amount,
+        milestone_1,
+        milestone_2,
+        milestone_3
+      }
     });
   } catch (error) {
     response.status(500).json({ error: error.message });
@@ -550,6 +560,65 @@ app.post('/api/newsletters/send', async (request, response) => {
       error: error.message
     });
   }
+});
+
+// POST endpoints
+
+// POST create new provider
+app.post('/api/providers', (req, res) => {
+  const { name, logo, bio, website_link, is_organization } = req.body;
+  
+  if (!name) {
+    return res.status(400).json({ error: 'Name is required' });
+  }
+  
+  db.run(queries.createProvider, [name, logo, bio, website_link, is_organization || true], function(err) {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    res.status(201).json({
+      success: true,
+      data: {
+        provider_id: this.lastID,
+        name,
+        logo,
+        bio,
+        website_link,
+        is_organization: is_organization || true
+      }
+    });
+  });
+});
+
+// POST create new campaign
+app.post('/api/campaigns', (req, res) => {
+  const { provider_id, image, campaign_bio, body_text, goal_amount, milestone_1, milestone_2, milestone_3 } = req.body;
+  
+  if (!provider_id || !campaign_bio || !goal_amount) {
+    return res.status(400).json({ error: 'provider_id, campaign_bio, and goal_amount are required' });
+  }
+  
+  db.run(queries.createCampaign, [provider_id, image, campaign_bio, body_text, goal_amount, milestone_1, milestone_2, milestone_3], function(err) {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    res.status(201).json({
+      success: true,
+      data: {
+        campaign_id: this.lastID,
+        provider_id,
+        image,
+        campaign_bio,
+        body_text,
+        goal_amount,
+        milestone_1,
+        milestone_2,
+        milestone_3
+      }
+    });
+  });
 });
 
 // Start server
