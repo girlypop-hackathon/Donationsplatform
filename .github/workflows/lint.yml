@@ -6,11 +6,13 @@ on:
       - main
       - master
       - develop
+      - Automatic-linting
   pull_request:
     branches:
       - main
       - master
       - develop
+      - Automatic-linting
 
 jobs:
   lint:
