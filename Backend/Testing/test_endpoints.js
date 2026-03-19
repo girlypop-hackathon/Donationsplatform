@@ -1,6 +1,6 @@
 /*
 Oprettet: 18-03-2026
-Af: Linea
+Af: Linea og Mistral Vibe
 Beskrivelse: - Simple test script for the API endpoints
 */
 
