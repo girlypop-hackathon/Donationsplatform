@@ -1,0 +1,24 @@
+{
+  "name": "animal-donation-platform",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "lint": "npm run lint:frontend && npm run lint:backend",
+    "lint:frontend": "standard \"Frontend/**/*.{js,jsx}\"",
+    "lint:backend": "eslint \"Backend/**/*.js\"",
+    "lint:fix": "standard --fix",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.22.3"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.1",
+    "prettier": "^3.6.2",
+    "standard": "^17.1.2",
+    "vite": "^5.0.0"
+  }
+}
