@@ -1,6 +1,6 @@
 import React from 'react'
 
-function Footer() {
+function Footer () {
   return (
     <footer className='footer'>
       <p>© 2026 FundTogether</p>

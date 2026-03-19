@@ -1,5 +1,5 @@
 // index.js - Main entry point for the donation platform API
-const app = require('./endpoints.js')
+const app = require('./api-router.js')
 
 console.log('Donation Platform API is ready to serve requests!')
 console.log('Available endpoints:')

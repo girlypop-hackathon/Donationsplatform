@@ -1,6 +1,6 @@
 import React from 'react'
 
-function Category() {
+function Category () {
   return (
     <section>
       <h1>Categories</h1>

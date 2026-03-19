@@ -102,12 +102,12 @@ function Home () {
   return (
     <div>
 
-      <section className="hero">
+      <section className='hero'>
 
         <h1>One platform. Unlimited support</h1>
 
         <p>
-         Where people come together to make a difference
+          Where people come together to make a difference
         </p>
 
       </section>

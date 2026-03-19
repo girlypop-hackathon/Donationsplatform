@@ -1,7 +1,11 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 
+<<<<<<< HEAD
 function Navbar ({ isAuthenticated, authUser, onLogout }) {
+=======
+function Navbar () {
+>>>>>>> Developer
   const navItemStyle = { color: '#001A4D' }
 
   async function handleLogoutClick () {
