@@ -1,186 +1,204 @@
 import React, { useEffect, useState } from 'react'
+import { useParams } from 'react-router-dom'
+import ProgressBar from '../components/ProgressBar'
 
-const API_BASE_URL = 'http://localhost:3000/api'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
+const API_PREFIX = API_BASE_URL ? `${API_BASE_URL}/api` : '/api'
+const PRESET_AMOUNTS = [50, 100, 250, 500]
 
-/**
- * Loads campaigns and handles donation submissions with newsletter/update opt-ins.
- */
 function CampaignPage () {
-  const [campaigns, setCampaigns] = useState([])
-  const [selectedCampaignId, setSelectedCampaignId] = useState('')
-  const [donorName, setDonorName] = useState('')
-  const [donorEmail, setDonorEmail] = useState('')
-  const [accountNumber, setAccountNumber] = useState('')
-  const [donationAmount, setDonationAmount] = useState('')
-  const [newsletterOptIn, setNewsletterOptIn] = useState(false)
-  const [campaignUpdatesOptIn, setCampaignUpdatesOptIn] = useState(false)
-  const [submitStatusMessage, setSubmitStatusMessage] = useState('')
+  const { id } = useParams()
+  const [campaign, setCampaign] = useState(null)
+  const [donations, setDonations] = useState([])
+  const [selectedPreset, setSelectedPreset] = useState(null)
+  const [customAmount, setCustomAmount] = useState('')
+  const [isLoading, setIsLoading] = useState(true)
   const [isSubmittingDonation, setIsSubmittingDonation] = useState(false)
+  const [donationStatus, setDonationStatus] = useState('')
+  const [error, setError] = useState('')
 
-  /**
-   * Fetches campaigns once so the donor can target the right campaign.
-   */
   useEffect(() => {
-    async function fetchCampaignList () {
+    const controller = new AbortController()
+
+    async function fetchCampaignDetails () {
       try {
-        const response = await fetch(`${API_BASE_URL}/campaigns`)
-        const payload = await response.json()
-        const campaignList = Array.isArray(payload.data) ? payload.data : []
+        setIsLoading(true)
+        setError('')
 
-        setCampaigns(campaignList)
+        const [campaignResponse, donationsResponse] = await Promise.all([
+          fetch(`${API_PREFIX}/campaigns/${id}`, {
+            signal: controller.signal
+          }),
+          fetch(`${API_PREFIX}/campaigns/${id}/donations`, {
+            signal: controller.signal
+          })
+        ])
 
-        if (campaignList.length > 0) {
-          setSelectedCampaignId(String(campaignList[0].campaign_id))
+        if (!campaignResponse.ok) {
+          throw new Error('Could not fetch campaign')
         }
-      } catch (error) {
-        setSubmitStatusMessage('Could not load campaigns from API.')
+
+        if (!donationsResponse.ok) {
+          throw new Error('Could not fetch donations')
+        }
+
+        const campaignResult = await campaignResponse.json()
+        const donationsResult = await donationsResponse.json()
+
+        setCampaign(campaignResult.data || null)
+        setDonations(donationsResult.data || [])
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          setError('Failed to load campaign from the database.')
+        }
+      } finally {
+        setIsLoading(false)
       }
     }
 
-    fetchCampaignList()
-  }, [])
+    fetchCampaignDetails()
 
-  /**
-   * Submits a donation and includes both newsletter and campaign update preferences.
-   */
-  async function handleDonationSubmit (event) {
-    event.preventDefault()
-    setIsSubmittingDonation(true)
-    setSubmitStatusMessage('')
+    return () => {
+      controller.abort()
+    }
+  }, [id])
+
+  const donationsSum = donations.reduce((sum, donation) => sum + (Number(donation.amount) || 0), 0)
+  const parsedAmountRaised = Number(campaign?.amount_raised)
+  const raisedAmount = Number.isFinite(parsedAmountRaised) ? parsedAmountRaised : donationsSum
+
+  const selectedAmount = Number(customAmount)
+  const hasValidAmount = customAmount !== '' && Number.isFinite(selectedAmount) && selectedAmount > 0
+
+  function handlePresetClick (amount) {
+    setSelectedPreset(amount)
+    setCustomAmount(String(amount))
+  }
+
+  function handleAmountChange (event) {
+    const nextValue = event.target.value
+    setCustomAmount(nextValue)
+
+    const parsedValue = Number(nextValue)
+    if (PRESET_AMOUNTS.includes(parsedValue)) {
+      setSelectedPreset(parsedValue)
+      return
+    }
+
+    setSelectedPreset(null)
+  }
+
+  async function handleDonate () {
+    if (!hasValidAmount || isSubmittingDonation) return
 
     try {
-      const response = await fetch(`${API_BASE_URL}/donations`, {
+      setIsSubmittingDonation(true)
+      setDonationStatus('')
+
+      const response = await fetch(`${API_PREFIX}/campaigns/${id}/donations`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          campaignId: Number(selectedCampaignId),
-          userName: donorName,
-          email: donorEmail,
-          accountNumber,
-          amount: Number(donationAmount),
-          newsletterOptIn,
-          campaignUpdatesOptIn
+          amount: selectedAmount,
+          user_name: 'Anonymous Donor'
         })
       })
 
-      const responsePayload = await response.json()
-
-      if (!response.ok || !responsePayload.success) {
-        setSubmitStatusMessage(responsePayload.error || 'Donation could not be completed.')
-        return
+      if (!response.ok) {
+        throw new Error('Could not create donation')
       }
 
-      setSubmitStatusMessage(
-        `Donation saved. Thank-you email tier: ${responsePayload.data.donationTier}.`
-      )
+      const result = await response.json()
+      const createdDonation = result.data
 
-      setDonorName('')
-      setDonorEmail('')
-      setAccountNumber('')
-      setDonationAmount('')
-      setNewsletterOptIn(false)
-      setCampaignUpdatesOptIn(false)
-    } catch (error) {
-      setSubmitStatusMessage('Donation failed due to a network/server error.')
+      if (createdDonation) {
+        setDonations((previous) => [...previous, createdDonation])
+        const updatedAmountRaisedFromApi = Number(createdDonation.amount_raised)
+
+        setCampaign((prevCampaign) => ({
+          ...prevCampaign,
+          amount_raised: Number.isFinite(updatedAmountRaisedFromApi)
+            ? updatedAmountRaisedFromApi
+            : (Number(prevCampaign?.amount_raised) || donationsSum) + selectedAmount
+        }))
+      }
+
+      setDonationStatus('Thank you! Your donation was registered.')
+      setCustomAmount('')
+      setSelectedPreset(null)
+    } catch (err) {
+      setDonationStatus('Donation failed. Please try again.')
     } finally {
       setIsSubmittingDonation(false)
     }
   }
 
+  if (isLoading) {
+    return <p>Loading campaign...</p>
+  }
+
+  if (error) {
+    return <p>{error}</p>
+  }
+
+  if (!campaign) {
+    return <p>Campaign not found.</p>
+  }
+
+  const goalAmount = Number(campaign.goal_amount) || 0
+
   return (
     <div className='campaign-page'>
-      <img src='https://placehold.co/800x400' alt='campaign' />
+      <img
+        src={campaign.image || 'https://placehold.co/800x400?text=Campaign'}
+        alt={campaign.campaign_bio || 'campaign'}
+        onError={(event) => {
+          event.currentTarget.src = 'https://placehold.co/800x400?text=Campaign'
+        }}
+      />
 
-      <h1>Support a Campaign</h1>
+      <h1>{`Campaign #${campaign.campaign_id}`}</h1>
 
-      <p>Donate and choose if you want newsletters and campaign follow-up updates.</p>
+      <p>{campaign.body_text || campaign.campaign_bio || 'No description available yet.'}</p>
+
+      <ProgressBar value={raisedAmount} max={goalAmount} />
+      <p>{`Raised: ${raisedAmount} / Goal: ${goalAmount}`}</p>
 
       <div className='donation-box'>
         <h3>Donate</h3>
 
-        <form onSubmit={handleDonationSubmit}>
-          <label htmlFor='campaign-select'>Campaign</label>
-          <select
-            id='campaign-select'
-            value={selectedCampaignId}
-            onChange={(event) => setSelectedCampaignId(event.target.value)}
-            required
-          >
-            {campaigns.map((campaign) => (
-              <option key={campaign.campaign_id} value={campaign.campaign_id}>
-                {campaign.campaign_bio}
-              </option>
-            ))}
-          </select>
+        <div className='preset-donations'>
+          {PRESET_AMOUNTS.map((amount) => (
+            <button
+              key={amount}
+              type='button'
+              className={`preset-btn ${selectedPreset === amount ? 'active' : ''}`}
+              onClick={() => {
+                handlePresetClick(amount)
+              }}
+            >
+              {`${amount} DKK`}
+            </button>
+          ))}
+        </div>
 
-          <label htmlFor='donor-name'>Your name</label>
-          <input
-            id='donor-name'
-            type='text'
-            placeholder='Jane Doe'
-            value={donorName}
-            onChange={(event) => setDonorName(event.target.value)}
-            required
-          />
+        <input
+          type='number'
+          placeholder='Or enter your own amount'
+          min='1'
+          value={customAmount}
+          onChange={handleAmountChange}
+        />
 
-          <label htmlFor='donor-email'>Email</label>
-          <input
-            id='donor-email'
-            type='email'
-            placeholder='jane@example.com'
-            value={donorEmail}
-            onChange={(event) => setDonorEmail(event.target.value)}
-            required
-          />
+        {hasValidAmount && <p className='selected-donation'>{`Selected donation: ${selectedAmount} DKK`}</p>}
 
-          <label htmlFor='account-number'>Account number (optional)</label>
-          <input
-            id='account-number'
-            type='text'
-            placeholder='123456789'
-            value={accountNumber}
-            onChange={(event) => setAccountNumber(event.target.value)}
-          />
+        {donationStatus && <p className='donation-status'>{donationStatus}</p>}
 
-          <label htmlFor='donation-amount'>Amount (DKK)</label>
-          <input
-            id='donation-amount'
-            type='number'
-            placeholder='200'
-            value={donationAmount}
-            onChange={(event) => setDonationAmount(event.target.value)}
-            min='1'
-            required
-          />
-
-          <label htmlFor='campaign-updates-opt-in'>
-            <input
-              id='campaign-updates-opt-in'
-              type='checkbox'
-              checked={campaignUpdatesOptIn}
-              onChange={(event) => setCampaignUpdatesOptIn(event.target.checked)}
-            />
-            I want campaign milestone and close updates
-          </label>
-
-          <label htmlFor='newsletter-opt-in'>
-            <input
-              id='newsletter-opt-in'
-              type='checkbox'
-              checked={newsletterOptIn}
-              onChange={(event) => setNewsletterOptIn(event.target.checked)}
-            />
-            I want general newsletters
-          </label>
-
-          <button type='submit' disabled={isSubmittingDonation}>
-            {isSubmittingDonation ? 'Sending...' : 'Donate'}
-          </button>
-        </form>
-
-        {submitStatusMessage ? <p>{submitStatusMessage}</p> : null}
+        <button type='button' disabled={!hasValidAmount || isSubmittingDonation} onClick={handleDonate}>
+          {isSubmittingDonation ? 'Processing...' : 'Donate'}
+        </button>
       </div>
     </div>
   )

@@ -1,3 +1,9 @@
+# Gmail til til
+Email keatest78@gmail.com
+Kode: nUSZNwn4bryw9u
+App password: jwdq agru gayw zvkg
+
+
 # Donationsplatform
 
 10 day vibe hackaton
@@ -26,9 +32,7 @@ Projektet er bygget med **React** og **Vite**.
    ```
 2. Åbn`http://localhost:5173`
 
-
 ### Backend server
-
 
 ## Linting og formatering
 
@@ -46,4 +50,5 @@ npm run format
 - `npm run format` kører Prettier på hele projektet
 
 ## AI prompt
+
 spec kit - hvordan foreslår de at man udvikler med AI. Laver kravspekifekation og man vericiferer

@@ -64,9 +64,11 @@ http://localhost:3000/api
 ## Endpoints
 
 ### 1. GET /providers
+
 Returns all providers in the system (both organizations and individuals).
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -93,9 +95,11 @@ Returns all providers in the system (both organizations and individuals).
 ```
 
 ### 2. GET /campaigns
+
 Returns all campaigns in the system.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -163,12 +167,15 @@ Request body:
 ```
 
 ### 4. GET /providers/:id
+
 Returns a specific provider by ID.
 
 **Parameters:**
+
 - `id` (URL parameter) - Provider ID
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -222,12 +229,15 @@ You can optionally filter by campaign by including `campaignId`.
 Request body:
 
 ### 6. GET /providers/:id/campaigns
+
 Returns all campaigns for a specific provider.
 
 **Parameters:**
+
 - `id` (URL parameter) - Provider ID
 
 **Response:**
+
 ```json
 {
   "newsletterTitle": "April Campaign Updates",
@@ -252,12 +262,15 @@ Returns all campaigns for a specific provider.
 ```
 
 ### 7. GET /campaigns/:id/donations
+
 Returns all donations for a specific campaign.
 
 **Parameters:**
+
 - `id` (URL parameter) - Campaign ID
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -280,9 +293,11 @@ Returns all donations for a specific campaign.
 ## POST Endpoints
 
 ### 8. POST /providers
+
 Creates a new provider (organization or individual).
 
 **Request Body:**
+
 ```json
 {
   "name": "Provider Name",
@@ -294,6 +309,7 @@ Creates a new provider (organization or individual).
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -309,9 +325,11 @@ Creates a new provider (organization or individual).
 ```
 
 ### 9. POST /campaigns
+
 Creates a new campaign for a provider.
 
 **Request Body:**
+
 ```json
 {
   "provider_id": 1,
@@ -326,6 +344,7 @@ Creates a new campaign for a provider.
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -367,6 +386,7 @@ Error format:
 ### Organizations
 
 ### Providers Table (formerly Organizations)
+
 - `organization_id` (INTEGER, PRIMARY KEY)
 - `name` (TEXT)
 - `logo` (TEXT)
@@ -374,6 +394,7 @@ Error format:
 - `website_link` (TEXT)
 
 ### Campaigns Table
+
 - `campaign_id` (INTEGER, PRIMARY KEY)
 - `provider_id` (INTEGER, FOREIGN KEY) - UPDATED: references providers.organization_id
 - `image` (TEXT)
@@ -385,6 +406,7 @@ Error format:
 - `milestone_3` (INTEGER)
 
 ### Donations Table
+
 - `donation_id` (INTEGER, PRIMARY KEY)
 - `campaign_id` (INTEGER, FOREIGN KEY)
 - `user_name` (TEXT)
@@ -397,17 +419,20 @@ Error format:
 ## Key Changes from Previous Version
 
 ### 1. Organizations → Providers
+
 - Table renamed from `organizations` to `providers`
 - All endpoints updated from `/organizations` to `/providers`
 - Foreign key in campaigns table changed from `organization_id` to `provider_id`
 
 ### 2. New Field: is_organization
+
 - Added `is_organization` BOOLEAN field to providers table
 - `true` = Organization (default)
 - `false` = Private individual
 - Allows both organizations and private persons to create campaigns
 
 ### 3. New POST Endpoints
+
 - `POST /api/providers` - Create new provider
 - `POST /api/campaigns` - Create new campaign
 
@@ -417,6 +442,7 @@ Error format:
 - `campaign_id` (INTEGER, FOREIGN KEY)
 - `event_type` (TEXT, unique per campaign)
 - `created_at` (TEXT)
+
 ## Project Structure
 
 ```
@@ -432,6 +458,7 @@ Backend/
 ## Testing the API
 
 Run this smoke test script after starting the backend server:
+
 ### Test POST endpoints with curl:
 
 ```bash
@@ -467,5 +494,8 @@ The API is ready for production use. For deployment:
 2. Configure environment variables for database connection
 3. Use a process manager like PM2
 4. Set up proper logging and monitoring
-node Testing/test_endpoints.js
+   node Testing/test_endpoints.js
+
+```
+
 ```
