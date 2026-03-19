@@ -103,7 +103,7 @@ db.serialize(() => {
   })
 })
 
-function ensureProviderIdColumn(db, done) {
+function ensureProviderIdColumn (db, done) {
   db.all('PRAGMA table_info(campaigns)', [], (err, columns) => {
     if (err) {
       console.error(
@@ -175,7 +175,7 @@ function ensureProviderIdColumn(db, done) {
   })
 }
 
-function ensureAmountRaisedColumn(db, done) {
+function ensureAmountRaisedColumn (db, done) {
   db.all('PRAGMA table_info(campaigns)', [], (err, columns) => {
     if (err) {
       console.error('Error reading campaigns schema:', err.message)
@@ -230,7 +230,7 @@ function ensureAmountRaisedColumn(db, done) {
   })
 }
 
-function insertSampleData(db, onComplete) {
+function insertSampleData (db, onComplete) {
   // Insert providers
   const providers = [
     {
@@ -422,7 +422,7 @@ function insertSampleData(db, onComplete) {
   })
 }
 
-function closeDatabase() {
+function closeDatabase () {
   db.close((err) => {
     if (err) {
       console.error('Error closing database:', err.message)

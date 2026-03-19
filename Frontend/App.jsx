@@ -24,7 +24,7 @@ function ProtectedRoute ({ isAuthenticated, children }) {
   return children
 }
 
-function App() {
+function App () {
   const [authToken, setAuthToken] = useState(() => localStorage.getItem('authToken') || '')
   const [authUser, setAuthUser] = useState(null)
   const [isCheckingSession, setIsCheckingSession] = useState(true)
