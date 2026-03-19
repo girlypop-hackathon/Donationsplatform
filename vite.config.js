@@ -1,12 +1,8 @@
-const { defineConfig } = require('vite')
+// Vite configuration loader - loads config from config folder
+const { defineConfig } = require('vite');
+const baseConfig = require('./config/vite.config.internal.js');
 
 module.exports = defineConfig({
-  server: {
-    proxy: {
-      '/api': {
-        target: 'http://localhost:3000',
-        changeOrigin: true
-      }
-    }
-  }
-})
+  ...baseConfig,
+  // Add any root-level overrides here if needed
+});
