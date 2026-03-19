@@ -1,6 +1,6 @@
 import React from 'react'
 
-function SignIn() {
+function SignIn () {
   return (
     <section>
       <h1>Sign In</h1>

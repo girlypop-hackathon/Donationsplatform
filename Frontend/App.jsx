@@ -12,7 +12,7 @@ import Info from './pages/Info'
 import SignIn from './pages/SignIn'
 import Search from './pages/Search'
 
-function App() {
+function App () {
   return (
     <BrowserRouter
       future={{
