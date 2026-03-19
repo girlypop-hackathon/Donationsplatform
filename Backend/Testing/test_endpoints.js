@@ -6,7 +6,7 @@ Beskrivelse: - Simple test script for the API endpoints
 
 const axios = require('axios')
 
-async function testEndpoints() {
+async function testEndpoints () {
   const baseUrl = 'http://localhost:3000/api'
 
   console.log('Testing API endpoints...\n')

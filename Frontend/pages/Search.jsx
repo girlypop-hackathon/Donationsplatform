@@ -1,6 +1,6 @@
 import React from 'react'
 
-function Search() {
+function Search () {
   return (
     <section>
       <h1>Search Campaigns</h1>

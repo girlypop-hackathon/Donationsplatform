@@ -51,6 +51,16 @@ db.serialize(() => {
     FOREIGN KEY (campaign_id) REFERENCES campaigns (campaign_id)
   )`)
 
+  // Users table for authentication
+  db.run(`CREATE TABLE IF NOT EXISTS users (
+    user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT,
+    status TEXT DEFAULT 'pending',
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  )`)
+
   // Email templates table
   db.run(`CREATE TABLE IF NOT EXISTS email_templates (
     template_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -93,7 +103,7 @@ db.serialize(() => {
   })
 })
 
-function ensureProviderIdColumn(db, done) {
+function ensureProviderIdColumn (db, done) {
   db.all('PRAGMA table_info(campaigns)', [], (err, columns) => {
     if (err) {
       console.error(
@@ -165,7 +175,7 @@ function ensureProviderIdColumn(db, done) {
   })
 }
 
-function ensureAmountRaisedColumn(db, done) {
+function ensureAmountRaisedColumn (db, done) {
   db.all('PRAGMA table_info(campaigns)', [], (err, columns) => {
     if (err) {
       console.error('Error reading campaigns schema:', err.message)
@@ -220,7 +230,7 @@ function ensureAmountRaisedColumn(db, done) {
   })
 }
 
-function insertSampleData(db, onComplete) {
+function insertSampleData (db, onComplete) {
   // Insert providers
   const providers = [
     {
@@ -412,7 +422,7 @@ function insertSampleData(db, onComplete) {
   })
 }
 
-function closeDatabase() {
+function closeDatabase () {
   db.close((err) => {
     if (err) {
       console.error('Error closing database:', err.message)

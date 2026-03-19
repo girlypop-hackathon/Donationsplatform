@@ -13,7 +13,7 @@ const senderEmailAddress =
  * Creates an SMTP transporter when all SMTP environment variables are configured.
  * Returns null when SMTP is not configured so the API can still run in development.
  */
-function createSmtpTransporter() {
+function createSmtpTransporter () {
   const smtpHost = process.env.SMTP_HOST
   const smtpPort = Number(process.env.SMTP_PORT || 587)
   const smtpUser = process.env.SMTP_USER
@@ -39,7 +39,7 @@ const smtpTransporter = createSmtpTransporter()
 /**
  * Sends an email through SMTP when configured, otherwise logs the message as a safe fallback.
  */
-async function sendEmailMessage({ recipientEmail, subjectLine, messageText }) {
+async function sendEmailMessage ({ recipientEmail, subjectLine, messageText }) {
   if (!smtpTransporter) {
     console.log('[EMAIL_FALLBACK_LOG]', {
       to: recipientEmail,
@@ -69,7 +69,7 @@ async function sendEmailMessage({ recipientEmail, subjectLine, messageText }) {
 /**
  * Returns the donation tier used for selecting thank-you flows.
  */
-function getDonationTierByAmount(donationAmount) {
+function getDonationTierByAmount (donationAmount) {
   if (donationAmount < 200) {
     return 'under_200'
   }
@@ -84,7 +84,7 @@ function getDonationTierByAmount(donationAmount) {
 /**
  * Builds a thank-you email for the donation tier requirements.
  */
-function buildThankYouEmailForTier({
+function buildThankYouEmailForTier ({
   donorName,
   campaignBio,
   donationAmount,
@@ -113,7 +113,7 @@ function buildThankYouEmailForTier({
 /**
  * Builds the dedicated follow-up email sent to donors above 1,000 DKK.
  */
-function buildDedicatedFollowUpEmail({ donorName, campaignBio }) {
+function buildDedicatedFollowUpEmail ({ donorName, campaignBio }) {
   return {
     subjectLine: 'Dedicated follow-up from the campaign team',
     messageText: `Hi ${donorName},\n\nYour major support for "${campaignBio}" is deeply appreciated. We will follow up personally with progress details and impact updates from the campaign team.`
@@ -123,7 +123,7 @@ function buildDedicatedFollowUpEmail({ donorName, campaignBio }) {
 /**
  * Builds a milestone follow-up email for donors subscribed to campaign updates.
  */
-function buildMilestoneFollowUpEmail({
+function buildMilestoneFollowUpEmail ({
   donorName,
   campaignBio,
   milestoneAmount,
@@ -138,7 +138,7 @@ function buildMilestoneFollowUpEmail({
 /**
  * Builds the campaign close email for donors subscribed to campaign updates.
  */
-function buildCampaignCloseEmail({
+function buildCampaignCloseEmail ({
   donorName,
   campaignBio,
   totalRaisedAmount
@@ -152,7 +152,7 @@ function buildCampaignCloseEmail({
 /**
  * Builds a newsletter email with a short optional intro and required content body.
  */
-function buildNewsletterEmail({ donorName, newsletterTitle, newsletterBody }) {
+function buildNewsletterEmail ({ donorName, newsletterTitle, newsletterBody }) {
   return {
     subjectLine: newsletterTitle,
     messageText: `Hi ${donorName},\n\n${newsletterBody}\n\nYou are receiving this because you opted in to newsletter updates.`
