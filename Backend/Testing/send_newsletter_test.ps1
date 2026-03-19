@@ -1,18 +1,9 @@
 param(
   [Parameter(Mandatory = $false)]
-  [string]$RecipientEmail,
-
-  [Parameter(Mandatory = $false)]
   [string]$NewsletterTitle = "Real inbox newsletter test",
 
   [Parameter(Mandatory = $false)]
-  [string]$NewsletterBody = "This is a real inbox delivery test.",
-
-  [Parameter(Mandatory = $false)]
-  [int]$CampaignId = 1,
-
-  [Parameter(Mandatory = $false)]
-  [int]$DonationAmount = 250
+  [string]$NewsletterBody = "This is a real inbox delivery test."
 )
 
 $ErrorActionPreference = 'Stop'
@@ -50,11 +41,14 @@ function Wait-ApiReady {
 function Ensure-BackendRunning {
   $existingListener = Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue
   if ($existingListener) {
-    Write-Host 'Backend is already running on port 3000.' -ForegroundColor Green
-    return
+    Write-Host 'Backend is already running on port 3000. Restarting to apply SMTP variables...' -ForegroundColor Yellow
+
+    $backendProcessId = $existingListener[0].OwningProcess
+    Stop-Process -Id $backendProcessId -Force
+    Start-Sleep -Seconds 1
   }
 
-  Write-Host 'Backend is not running. Starting backend in a new PowerShell window...' -ForegroundColor Yellow
+  Write-Host 'Starting backend in a new PowerShell window...' -ForegroundColor Yellow
   $backendStartCommand = "Set-Location '$PSScriptRoot\..'; npm start"
   Start-Process powershell -ArgumentList "-NoExit", "-Command", $backendStartCommand | Out-Null
 
@@ -63,33 +57,6 @@ function Ensure-BackendRunning {
   }
 
   Write-Host 'Backend started successfully.' -ForegroundColor Green
-}
-
-# Inserts one opted-in donation row so the provided recipient receives the newsletter.
-function Add-TestOptedInRecipient {
-  param(
-    [string]$Email,
-    [int]$Campaign,
-    [int]$Amount
-  )
-
-  if ([string]::IsNullOrWhiteSpace($Email)) {
-    return
-  }
-
-  Write-Host "Adding opted-in test recipient: $Email" -ForegroundColor Cyan
-
-  $donationPayload = @{
-    campaignId = $Campaign
-    userName = 'Newsletter Test User'
-    email = $Email
-    accountNumber = '12345678'
-    campaignUpdatesOptIn = $true
-    amount = $Amount
-    newsletterOptIn = $true
-  } | ConvertTo-Json
-
-  Invoke-RestMethod -Method Post -Uri 'http://localhost:3000/api/donations' -ContentType 'application/json' -Body $donationPayload | Out-Null
 }
 
 # Sends one newsletter email request to all newsletter-opted-in users.
@@ -115,15 +82,17 @@ if (-not (Wait-ApiReady -TimeoutSeconds 10)) {
   throw 'Backend is not reachable at http://localhost:3000.'
 }
 
-if (-not [string]::IsNullOrWhiteSpace($RecipientEmail)) {
-  Add-TestOptedInRecipient -Email $RecipientEmail -Campaign $CampaignId -Amount $DonationAmount
+$result = Send-NewsletterToOptedInUsers -Title $NewsletterTitle -Body $NewsletterBody
+
+if (-not $result.success) {
+  throw 'Newsletter request failed. Check backend logs for details.'
 }
 
-$result = Send-NewsletterToOptedInUsers -Title $NewsletterTitle -Body $NewsletterBody
+if ([int]$result.data.recipientsCount -le 0) {
+  throw 'No opted-in newsletter recipients were found. Add newsletter-opted-in donations first.'
+}
 
 Write-Host 'Newsletter request completed.' -ForegroundColor Green
 Write-Host ('Success: ' + $result.success)
 Write-Host ('Recipients: ' + $result.data.recipientsCount)
 Write-Host ('Campaign filter: ' + $result.data.campaignId)
-Write-Host ''
-Write-Host 'Tip: Use -RecipientEmail you@domain.com to ensure a real inbox is opted in for this run.' -ForegroundColor Yellow
