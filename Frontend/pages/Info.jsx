@@ -1,6 +1,6 @@
 import React from 'react'
 
-function Info() {
+function Info () {
   return (
     <section>
       <h1>Info</h1>
