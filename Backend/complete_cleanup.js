@@ -12,7 +12,7 @@ const db = new sqlite3.Database('./donations.db', (err) => {
   startCompleteCleanup(db)
 })
 
-function startCompleteCleanup(db) {
+function startCompleteCleanup (db) {
   db.serialize(() => {
     console.log('\n=== CURRENT STATE ===')
 
@@ -71,11 +71,12 @@ function startCompleteCleanup(db) {
                     AND organization_id = ?`,
                   [dup.keep_id, dup.campaign_bio, org.organization_id],
                   (err) => {
-                    if (err)
+                    if (err) {
                       console.error(
                         'Error removing duplicate campaign:',
                         err.message
                       )
+                    }
                   }
                 )
               })
@@ -111,8 +112,7 @@ function startCompleteCleanup(db) {
                 AND amount = ?`,
             [dup.keep_id, dup.user_name, dup.campaign_id, dup.amount],
             (err) => {
-              if (err)
-                console.error('Error removing duplicate donation:', err.message)
+              if (err) { console.error('Error removing duplicate donation:', err.message) }
             }
           )
         })
@@ -126,9 +126,7 @@ function startCompleteCleanup(db) {
       'DELETE FROM donations WHERE campaign_id NOT IN (SELECT campaign_id FROM campaigns)',
       [],
       (err) => {
-        if (err)
-          console.error('Error cleaning up orphaned donations:', err.message)
-        else console.log('✅ Cleaned up orphaned donations')
+        if (err) { console.error('Error cleaning up orphaned donations:', err.message) } else console.log('✅ Cleaned up orphaned donations')
       }
     )
 
@@ -136,9 +134,7 @@ function startCompleteCleanup(db) {
       'DELETE FROM campaigns WHERE organization_id NOT IN (SELECT organization_id FROM organizations)',
       [],
       (err) => {
-        if (err)
-          console.error('Error cleaning up orphaned campaigns:', err.message)
-        else console.log('✅ Cleaned up orphaned campaigns')
+        if (err) { console.error('Error cleaning up orphaned campaigns:', err.message) } else console.log('✅ Cleaned up orphaned campaigns')
       }
     )
 

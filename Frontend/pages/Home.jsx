@@ -4,6 +4,30 @@ import CampaignCard from '../components/CampaignCard'
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
 const API_PREFIX = API_BASE_URL ? `${API_BASE_URL}/api` : '/api'
 
+const FALLBACK_CAMPAIGNS = [
+  {
+    campaign_id: 'demo-1',
+    image: '/images/elderly-couple.jpg',
+    campaign_bio: 'Help provide care and support for an elderly couple in need.',
+    amount_raised: 1200,
+    goal_amount: 5000
+  },
+  {
+    campaign_id: 'demo-2',
+    image: '/images/animal-rescue.jpg',
+    campaign_bio: 'Help rescue and care for animals in distress.',
+    amount_raised: 900,
+    goal_amount: 3500
+  },
+  {
+    campaign_id: 'demo-3',
+    image: '/images/hospital-patient.jpg',
+    campaign_bio: 'Support for a person in hospital needing medical care.',
+    amount_raised: 2100,
+    goal_amount: 6000
+  }
+]
+
 function Home () {
   const [campaigns, setCampaigns] = useState([])
   const [organizations, setOrganizations] = useState([])
@@ -71,6 +95,10 @@ function Home () {
     }
   }, [])
 
+  const shouldUseFallbackCampaigns =
+    (!isLoadingCampaigns && (campaignError || campaigns.length === 0))
+  const campaignsToDisplay = shouldUseFallbackCampaigns ? FALLBACK_CAMPAIGNS : campaigns
+
   return (
     <div>
 
@@ -87,12 +115,11 @@ function Home () {
       <section className='campaign-grid'>
         {isLoadingCampaigns && <p>Loading campaigns...</p>}
         {campaignError && <p>{campaignError}</p>}
-        {!isLoadingCampaigns && !campaignError && campaigns.length === 0 && (
-          <p>No campaigns found in the database.</p>
+        {shouldUseFallbackCampaigns && (
+          <p>Showing demo campaigns while API data is unavailable.</p>
         )}
         {!isLoadingCampaigns &&
-          !campaignError &&
-          campaigns.map((campaign) => (
+          campaignsToDisplay.map((campaign) => (
             <CampaignCard key={campaign.campaign_id} campaign={campaign} />
           ))}
       </section>

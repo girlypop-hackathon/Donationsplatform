@@ -3,8 +3,8 @@ import React from 'react'
 function Footer () {
   return (
     <footer className='footer'>
-      <p>© 2026 AnimalFund</p>
-      <p>Helping animals through donations</p>
+      <p>© 2026 FundTogether</p>
+      <p>Helping communities through donations</p>
     </footer>
   )
 }
