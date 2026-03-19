@@ -203,6 +203,8 @@ body{
 .donation-box button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
 .donate-btn{
   width:100%;
   padding:10px;
@@ -216,4 +218,103 @@ body{
   padding: 20px;
   margin-top: 40px;
   background: white;
+}
+
+/* Create Campaign Form Styles */
+.form-page {
+  max-width: 800px;
+  margin: 40px auto;
+  padding: 20px;
+}
+
+.campaign-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  font-weight: 600;
+  color: #333;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.milestones-section {
+  margin-top: 10px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+.milestones-section h3 {
+  margin-bottom: 15px;
+  color: #0B2EAE;
+}
+
+.create-button {
+  padding: 15px;
+  background: #EA672D;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s;
+  margin-top: 10px;
+}
+
+.create-button:hover {
+  background: #d4551a;
+}
+
+.create-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.error-message {
+  padding: 12px;
+  background: #ffebee;
+  color: #c62828;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border: 1px solid #ef9a9a;
+}
+
+.success-message {
+  padding: 12px;
+  background: #e8f5e9;
+  color: #2e7d32;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border: 1px solid #a5d6a7;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #0B2EAE;
+  box-shadow: 0 0 0 2px rgba(11, 46, 174, 0.1);
 }
