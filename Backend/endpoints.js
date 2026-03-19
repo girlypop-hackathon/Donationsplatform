@@ -1,7 +1,9 @@
 /*
 Oprettet: 18-03-2026
-Af: Linea
+Af: Linea og Mistral Vibe
 Beskrivelse: API endpoints for the donation platform
+
+Note: this file needs cleanup regarding to many tests for provider_id - check if we already have it = no need for all this lenght
 */
 
 // endpoints.js - API endpoints for the donation platform
@@ -42,46 +44,46 @@ function ensureProviderIdColumn(onDone) {
     const hasProviderId = columns.some((column) => column.name === 'provider_id');
     const hasOrganizationId = columns.some((column) => column.name === 'organization_id');
 
-    if (hasProviderId && hasOrganizationId) {
-      db.run(
-        'UPDATE campaigns SET provider_id = organization_id WHERE provider_id IS NULL OR provider_id = 0',
-        (backfillErr) => {
-          if (backfillErr) {
-            console.error('Could not backfill provider_id values:', backfillErr.message);
-          }
-          if (onDone) onDone();
-        }
-      );
-      return;
-    }
-
+    // If we have provider_id, we're good to go
     if (hasProviderId) {
+      console.log('provider_id column already exists.');
       if (onDone) onDone();
       return;
     }
 
-    db.run('ALTER TABLE campaigns ADD COLUMN provider_id INTEGER', (alterErr) => {
-      if (alterErr) {
-        console.error('Could not add provider_id column:', alterErr.message);
-        if (onDone) onDone();
-        return;
-      }
-
-      if (!hasOrganizationId) {
-        if (onDone) onDone();
-        return;
-      }
-
-      db.run('UPDATE campaigns SET provider_id = organization_id', (updateErr) => {
-        if (updateErr) {
-          console.error('Could not copy organization_id to provider_id:', updateErr.message);
-        } else {
-          console.log('Campaign provider_id column was added and backfilled.');
+    // If we don't have provider_id but have organization_id, migrate
+    if (!hasProviderId && hasOrganizationId) {
+      db.run('ALTER TABLE campaigns ADD COLUMN provider_id INTEGER', (alterErr) => {
+        if (alterErr) {
+          console.error('Could not add provider_id column:', alterErr.message);
+          if (onDone) onDone();
+          return;
         }
 
+        db.run('UPDATE campaigns SET provider_id = organization_id', (updateErr) => {
+          if (updateErr) {
+            console.error('Could not copy organization_id to provider_id:', updateErr.message);
+          } else {
+            console.log('Campaign provider_id column was added and backfilled from organization_id.');
+          }
+          if (onDone) onDone();
+        });
+      });
+      return;
+    }
+
+    // If we have neither, just add provider_id column
+    if (!hasProviderId && !hasOrganizationId) {
+      db.run('ALTER TABLE campaigns ADD COLUMN provider_id INTEGER', (alterErr) => {
+        if (alterErr) {
+          console.error('Could not add provider_id column:', alterErr.message);
+        } else {
+          console.log('Added provider_id column to campaigns table.');
+        }
         if (onDone) onDone();
       });
-    });
+      return;
+    }
   });
 }
 
