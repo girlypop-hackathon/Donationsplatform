@@ -203,12 +203,79 @@ body{
 .donation-box button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-.donate-btn{
-  width:100%;
-  padding:10px;
-  background:#EA672D;
-  color:white;
-  border:none;
+}
+
+.payment-page {
+  max-width: 640px;
+  margin: 24px auto;
+  background: white;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.payment-form {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.payment-form input[type='text'],
+.payment-form input[type='email'],
+.payment-form input[type='number'] {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.payment-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.payment-error {
+  margin: 0;
+  color: #b42318;
+  font-weight: 600;
+}
+
+.payment-success {
+  margin: 0;
+  color: #2f7d32;
+  font-weight: 600;
+}
+
+.payment-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.payment-actions button {
+  padding: 10px 14px;
+  border: none;
+  border-radius: 8px;
+  background: #2ecc71;
+  color: white;
+  cursor: pointer;
+}
+
+.payment-actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.payment-back-link {
+  color: #001A4D;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.payment-back-link:hover {
+  text-decoration: underline;
 }
 
 .footer {

@@ -6,6 +6,7 @@ import Footer from './components/Footer'
 
 import Home from './pages/Home'
 import CampaignPage from './pages/CampaignPage'
+import PaymentPage from './pages/PaymentPage'
 import CreateCampaign from './pages/CreateCampaign'
 import Category from './pages/Category'
 import Info from './pages/Info'
@@ -26,6 +27,7 @@ function App() {
         <Routes>
           <Route path='/' element={<Home />} />
           <Route path='/campaign/:id' element={<CampaignPage />} />
+          <Route path='/campaign/:id/payment' element={<PaymentPage />} />
           <Route path='/create' element={<CreateCampaign />} />
           <Route path='/category' element={<Category />} />
           <Route path='/info' element={<Info />} />
