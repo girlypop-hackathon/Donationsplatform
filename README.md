@@ -1,9 +1,3 @@
-# Gmail til til
-Email keatest78@gmail.com
-Kode: nUSZNwn4bryw9u
-App password: jwdq agru gayw zvkg
-
-
 # Donationsplatform
 
 10 day vibe hackaton
