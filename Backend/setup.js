@@ -51,6 +51,16 @@ db.serialize(() => {
     FOREIGN KEY (campaign_id) REFERENCES campaigns (campaign_id)
   )`)
 
+  // Users table for authentication
+  db.run(`CREATE TABLE IF NOT EXISTS users (
+    user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT,
+    status TEXT DEFAULT 'pending',
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  )`)
+
   // Email templates table
   db.run(`CREATE TABLE IF NOT EXISTS email_templates (
     template_id INTEGER PRIMARY KEY AUTOINCREMENT,

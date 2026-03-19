@@ -8,11 +8,16 @@ Beskrivelse: API endpoints for the donation platform
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const queries = require('./queries');
 const emailService = require('./emailService');
 
 const app = express();
 const PORT = 3000;
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-only-secret-change-me';
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '8h';
+const revokedTokens = new Set();
 
 // Create database connection
 const db = new sqlite3.Database('./donations.db', (err) => {
@@ -21,7 +26,9 @@ const db = new sqlite3.Database('./donations.db', (err) => {
   } else {
     console.log('Connected to the donations database.');
     ensureProviderIdColumn(() => {
-      ensureAmountRaisedColumn();
+      ensureAmountRaisedColumn(() => {
+        ensureUsersTable();
+      });
     });
   }
 });
@@ -85,26 +92,30 @@ function ensureProviderIdColumn(onDone) {
   });
 }
 
-function ensureAmountRaisedColumn() {
+function ensureAmountRaisedColumn(onDone) {
   db.all('PRAGMA table_info(campaigns)', [], (err, columns) => {
     if (err) {
       console.error('Could not inspect campaigns table:', err.message);
+      if (onDone) onDone();
       return;
     }
 
     const hasAmountRaised = columns.some((column) => column.name === 'amount_raised');
 
     if (columns.length === 0) {
+      if (onDone) onDone();
       return;
     }
 
     if (hasAmountRaised) {
+      if (onDone) onDone();
       return;
     }
 
     db.run('ALTER TABLE campaigns ADD COLUMN amount_raised REAL DEFAULT 0', (alterErr) => {
       if (alterErr) {
         console.error('Could not add amount_raised column:', alterErr.message);
+        if (onDone) onDone();
         return;
       }
 
@@ -117,14 +128,37 @@ function ensureAmountRaisedColumn() {
         (updateErr) => {
           if (updateErr) {
             console.error('Could not backfill amount_raised values:', updateErr.message);
+            if (onDone) onDone();
             return;
           }
 
           console.log('Campaign amount_raised column was added and backfilled.');
+          if (onDone) onDone();
         }
       );
     });
   });
+}
+
+function ensureUsersTable() {
+  db.run(
+    `CREATE TABLE IF NOT EXISTS users (
+      user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT,
+      email TEXT NOT NULL UNIQUE,
+      password_hash TEXT,
+      status TEXT DEFAULT 'pending',
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )`,
+    (error) => {
+      if (error) {
+        console.error('Could not ensure users table:', error.message);
+        return;
+      }
+
+      console.log('Users table is ready.');
+    }
+  );
 }
 
 // Middleware
@@ -244,6 +278,43 @@ function validateDonationInput(donationInput) {
   return null;
 }
 
+function normalizeEmail(rawEmail) {
+  return String(rawEmail || '').trim().toLowerCase();
+}
+
+function isValidEmail(email) {
+  return /^\S+@\S+\.\S+$/.test(email);
+}
+
+function buildPublicUser(userRow) {
+  return {
+    userId: userRow.user_id,
+    name: userRow.name,
+    email: userRow.email,
+    status: userRow.status,
+    createdAt: userRow.created_at
+  };
+}
+
+function extractBearerToken(request) {
+  const authorizationHeader = String(request.headers.authorization || '');
+  const [scheme, token] = authorizationHeader.split(' ');
+
+  if (scheme !== 'Bearer' || !token) {
+    return null;
+  }
+
+  return token;
+}
+
+function verifyToken(token) {
+  try {
+    return jwt.verify(token, JWT_SECRET);
+  } catch (_error) {
+    return null;
+  }
+}
+
 /**
  * Returns milestone event descriptors that are reached for the current total.
  */
@@ -339,6 +410,136 @@ async function processReachedMilestones(campaignRow, totalRaisedAmount) {
 
 ensureCampaignEventTable().catch((error) => {
   console.error('Failed to create campaign event table:', error.message);
+});
+
+app.post('/api/auth/login', async (request, response) => {
+  try {
+    const email = normalizeEmail(request.body.email);
+    const password = String(request.body.password || '');
+
+    if (!isValidEmail(email) || password.length < 8) {
+      response.status(400).json({
+        success: false,
+        error: 'email and password are required (password min 8 chars)'
+      });
+      return;
+    }
+
+    const userRow = await getSingleRow('SELECT * FROM users WHERE email = ?', [email]);
+
+    if (!userRow || !userRow.password_hash) {
+      response.status(401).json({
+        success: false,
+        error: 'Invalid email or password'
+      });
+      return;
+    }
+
+    const hasValidPassword = await bcrypt.compare(password, userRow.password_hash);
+    if (!hasValidPassword) {
+      response.status(401).json({
+        success: false,
+        error: 'Invalid email or password'
+      });
+      return;
+    }
+
+    if (String(userRow.status || '').toLowerCase() === 'disabled') {
+      response.status(403).json({
+        success: false,
+        error: 'User account is disabled'
+      });
+      return;
+    }
+
+    const token = jwt.sign(
+      {
+        sub: userRow.user_id,
+        email: userRow.email
+      },
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRES_IN }
+    );
+
+    response.json({
+      success: true,
+      data: {
+        token,
+        user: buildPublicUser(userRow)
+      }
+    });
+  } catch (error) {
+    response.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+app.get('/api/auth/me', async (request, response) => {
+  try {
+    const token = extractBearerToken(request);
+    if (!token) {
+      response.status(401).json({
+        success: false,
+        error: 'Authorization token is required'
+      });
+      return;
+    }
+
+    if (revokedTokens.has(token)) {
+      response.status(401).json({
+        success: false,
+        error: 'Token has been logged out'
+      });
+      return;
+    }
+
+    const tokenPayload = verifyToken(token);
+    if (!tokenPayload || !tokenPayload.sub) {
+      response.status(401).json({
+        success: false,
+        error: 'Invalid or expired token'
+      });
+      return;
+    }
+
+    const userRow = await getSingleRow('SELECT * FROM users WHERE user_id = ?', [tokenPayload.sub]);
+    if (!userRow) {
+      response.status(401).json({
+        success: false,
+        error: 'User not found'
+      });
+      return;
+    }
+
+    response.json({
+      success: true,
+      data: {
+        user: buildPublicUser(userRow)
+      }
+    });
+  } catch (error) {
+    response.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+app.post('/api/auth/logout', (request, response) => {
+  const token = extractBearerToken(request);
+
+  if (token) {
+    revokedTokens.add(token);
+  }
+
+  response.json({
+    success: true,
+    data: {
+      message: 'Logged out successfully'
+    }
+  });
 });
 
 // GET all providers
