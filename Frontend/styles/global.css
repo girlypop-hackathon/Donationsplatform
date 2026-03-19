@@ -65,6 +65,11 @@ body{
   text-decoration:none;
 }
 
+.nav-user {
+  color: #4a4a4a;
+  font-size: 14px;
+}
+
 .logo{
   color:#0B2EAE !important;
   font-family:"Roboto", sans-serif;
@@ -214,6 +219,11 @@ body{
 }
 
 .footer {
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
   text-align: center;
   padding: 20px;
   margin-top: 40px;

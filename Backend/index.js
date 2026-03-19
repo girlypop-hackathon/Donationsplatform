@@ -1,11 +1,14 @@
 // index.js - Main entry point for the donation platform API
-const app = require('./endpoints.js')
+const app = require('./api-router.js')
 
 console.log('Donation Platform API is ready to serve requests!')
 console.log('Available endpoints:')
 console.log('- GET /api/providers - Get all providers')
 console.log('- GET /api/campaigns - Get all campaigns')
 console.log('- GET /api/users - Get all users')
+console.log('- POST /api/auth/login - Login with email and password')
+console.log('- GET /api/auth/me - Get current authenticated user')
+console.log('- POST /api/auth/logout - Log out current token')
 console.log('- GET /api/providers/:id - Get provider by ID')
 console.log('- GET /api/campaigns/:id - Get campaign by ID')
 console.log('- GET /api/providers/:id/campaigns - Get campaigns by provider')

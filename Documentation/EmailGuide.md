@@ -37,7 +37,26 @@ $env:SMTP_FROM = "keatest78@gmail.com"
 $env:SMTP_SECURE = "false"
 ```
 
-## 3. Start backend with SMTP enabled
+## 3. Quick method: run the newsletter test script
+
+If you just want one command, use the built-in script.
+
+Open PowerShell:
+
+```powershell
+Set-Location "c:\Kode - ITA\4. Semester\Donations_opg\Donationsplatform\Backend"
+npm run test:newsletter
+```
+
+What this script does:
+
+- Sets the SMTP values automatically
+- Uses `http://localhost:3000` as API base
+- Restarts backend to ensure SMTP variables are applied
+- Sends newsletter email to all `general_newsletter = true` users
+- Fails if no opted-in users are found
+
+## 4. Start backend with SMTP enabled
 
 ```powershell
 $connection = Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue
@@ -49,7 +68,7 @@ npm start
 
 Keep this terminal open while testing.
 
-## 4. Opt in a recipient through donation
+## 5. Opt in a recipient through donation
 
 Open a second PowerShell terminal:
 
@@ -67,7 +86,7 @@ Invoke-RestMethod -Method Post -Uri "http://localhost:3000/api/donations" -Conte
 } | ConvertTo-Json) | ConvertTo-Json -Depth 8
 ```
 
-## 5. Send newsletter to opted-in users
+## 6. Send newsletter to opted-in users
 
 ```powershell
 Invoke-RestMethod -Method Post -Uri "http://localhost:3000/api/newsletters/send" -ContentType "application/json" -Body (@{
@@ -76,13 +95,13 @@ Invoke-RestMethod -Method Post -Uri "http://localhost:3000/api/newsletters/send"
 } | ConvertTo-Json) | ConvertTo-Json -Depth 8
 ```
 
-## 6. Verify inbox delivery
+## 7. Verify inbox delivery
 
 - Check the recipient inbox and spam folder
 - Confirm sender is your SMTP_FROM address
 - Confirm API response has success true
 
-## 7. Recommended test cases
+## 8. Recommended test cases
 
 - Donation under 200 DKK: simple thank-you email
 - Donation 200-1000 DKK: thank-you plus campaign update

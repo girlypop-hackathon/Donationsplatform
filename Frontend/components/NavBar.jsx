@@ -1,8 +1,13 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 
-function Navbar() {
+function Navbar ({ isAuthenticated, authUser, onLogout }) {
   const navItemStyle = { color: '#001A4D' }
+
+  async function handleLogoutClick () {
+    await onLogout()
+  }
+
   return (
     <nav className='navbar'>
       <div className='nav-links nav-left'>
@@ -30,9 +35,25 @@ function Navbar() {
         <Link className='nav-action' to='/create' style={navItemStyle}>
           Start Campaign
         </Link>
-        <Link className='nav-action' to='/signin' style={navItemStyle}>
-          Sign In
-        </Link>
+
+        {isAuthenticated
+          ? (
+            <>
+              <Link className='nav-action' to='/dashboard' style={navItemStyle}>
+                Dashboard
+              </Link>
+              <button className='nav-action' type='button' onClick={handleLogoutClick}>
+                Log Out
+              </button>
+              <span className='nav-user'>{authUser?.name || authUser?.email}</span>
+            </>
+            )
+          : (
+            <Link className='nav-action' to='/signin' style={navItemStyle}>
+              Sign In
+            </Link>
+            )}
+
         <Link className='nav-action' to='/search' style={navItemStyle}>
           Search
         </Link>

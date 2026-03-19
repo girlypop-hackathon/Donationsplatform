@@ -4,7 +4,7 @@ import ProgressBar from './ProgressBar'
 
 const FALLBACK_IMAGE = 'https://placehold.co/600x400?text=Campaign'
 
-function CampaignCard({ campaign }) {
+function CampaignCard ({ campaign }) {
   if (!campaign) {
     console.log('Campaign data is missing - fun CampaignCard component with no campaign prop')
     return null
