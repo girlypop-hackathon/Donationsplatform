@@ -10,14 +10,14 @@ const queries = {
 
   // Campaign queries
   getAllCampaigns:
-    'SELECT *, COALESCE(NULLIF(provider_id, 0), organization_id) AS provider_id, COALESCE(amount_raised, 0) AS amount_raised FROM campaigns',
+    'SELECT *, COALESCE(amount_raised, 0) AS amount_raised FROM campaigns',
 
   // User/donation queries (since there's no separate users table, we'll use donations)
   getAllUsers: 'SELECT DISTINCT user_name, email FROM donations',
 
   // Specific GET queries
   getCampaignsByProvider:
-    'SELECT *, COALESCE(NULLIF(provider_id, 0), organization_id) AS provider_id, COALESCE(amount_raised, 0) AS amount_raised FROM campaigns WHERE COALESCE(NULLIF(provider_id, 0), organization_id) = ?',
+    'SELECT *, COALESCE(amount_raised, 0) AS amount_raised FROM campaigns WHERE provider_id = ?',
   getDonationsByCampaign: 'SELECT * FROM donations WHERE campaign_id = ?',
   getProviderById: 'SELECT * FROM providers WHERE organization_id = ?',
   getCampaignById: 'SELECT * FROM campaigns WHERE campaign_id = ?',
