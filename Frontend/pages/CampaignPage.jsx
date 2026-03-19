@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import ProgressBar from '../components/ProgressBar'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
@@ -8,13 +8,12 @@ const PRESET_AMOUNTS = [50, 100, 250, 500]
 
 function CampaignPage () {
   const { id } = useParams()
+  const navigate = useNavigate()
   const [campaign, setCampaign] = useState(null)
   const [donations, setDonations] = useState([])
   const [selectedPreset, setSelectedPreset] = useState(null)
   const [customAmount, setCustomAmount] = useState('')
   const [isLoading, setIsLoading] = useState(true)
-  const [isSubmittingDonation, setIsSubmittingDonation] = useState(false)
-  const [donationStatus, setDonationStatus] = useState('')
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -88,51 +87,14 @@ function CampaignPage () {
     setSelectedPreset(null)
   }
 
-  async function handleDonate () {
-    if (!hasValidAmount || isSubmittingDonation) return
+  function handleDonate () {
+    if (!hasValidAmount) return
 
-    try {
-      setIsSubmittingDonation(true)
-      setDonationStatus('')
-
-      const response = await fetch(`${API_PREFIX}/campaigns/${id}/donations`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          amount: selectedAmount,
-          user_name: 'Anonymous Donor'
-        })
-      })
-
-      if (!response.ok) {
-        throw new Error('Could not create donation')
+    navigate(`/campaign/${id}/payment?amount=${selectedAmount}`, {
+      state: {
+        amount: selectedAmount
       }
-
-      const result = await response.json()
-      const createdDonation = result.data
-
-      if (createdDonation) {
-        setDonations((previous) => [...previous, createdDonation])
-        const updatedAmountRaisedFromApi = Number(createdDonation.amount_raised)
-
-        setCampaign((prevCampaign) => ({
-          ...prevCampaign,
-          amount_raised: Number.isFinite(updatedAmountRaisedFromApi)
-            ? updatedAmountRaisedFromApi
-            : (Number(prevCampaign?.amount_raised) || donationsSum) + selectedAmount
-        }))
-      }
-
-      setDonationStatus('Thank you! Your donation was registered.')
-      setCustomAmount('')
-      setSelectedPreset(null)
-    } catch (err) {
-      setDonationStatus('Donation failed. Please try again.')
-    } finally {
-      setIsSubmittingDonation(false)
-    }
+    })
   }
 
   if (isLoading) {
@@ -194,10 +156,8 @@ function CampaignPage () {
 
         {hasValidAmount && <p className='selected-donation'>{`Selected donation: ${selectedAmount} DKK`}</p>}
 
-        {donationStatus && <p className='donation-status'>{donationStatus}</p>}
-
-        <button type='button' disabled={!hasValidAmount || isSubmittingDonation} onClick={handleDonate}>
-          {isSubmittingDonation ? 'Processing...' : 'Donate'}
+        <button type='button' disabled={!hasValidAmount} onClick={handleDonate}>
+          Continue to payment
         </button>
       </div>
     </div>
