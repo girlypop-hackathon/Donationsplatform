@@ -73,18 +73,18 @@ db.serialize(() => {
   ensureProviderIdColumn(db, () => {
     ensureAmountRaisedColumn(db, () => {
       // Check if data already exists before inserting
-      db.get('SELECT COUNT(*) as count FROM providers', [], (err, row) => {
+      db.get('SELECT COUNT(*) as count FROM providers', [], (err, result) => {
         if (err) {
           console.error('Error checking providers:', err.message)
           return
         }
 
-        if (row.count === 0) {
+        if (result.count === 0) {
           console.log('No data found. Inserting sample data...')
           insertSampleData(db)
         } else {
           console.log(
-            `Database already contains ${row.count} organizations. No data inserted.`
+            `Database already contains ${result.count} organizations. No data inserted.`
           )
           closeDatabase()
         }
@@ -102,16 +102,6 @@ function ensureProviderIdColumn(db, done) {
       )
       if (done) done()
       return
-    }
-
-    if (row.count === 0) {
-      console.log('No data found. Inserting sample data...')
-      insertSampleData(db, closeDatabaseConnection)
-    } else {
-      console.log(
-        `Database already contains ${row.count} providers. No data inserted.`
-      )
-      closeDatabaseConnection()
     }
 
     const hasProviderId = columns.some(
