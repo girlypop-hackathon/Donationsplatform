@@ -50,10 +50,6 @@ function SignIn ({ isAuthenticated, onLogin, isCheckingSession }) {
     }
   }
 
-<<<<<<< HEAD
-=======
-function SignIn () {
->>>>>>> Developer
   return (
     <section className='auth-card'>
       <h1>Sign In</h1>
