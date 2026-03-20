@@ -11,6 +11,16 @@ import CampaignCard from '../components/CampaignCard'
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
 const API_PREFIX = API_BASE_URL ? `${API_BASE_URL}/api` : '/api'
 
+//Linea og Mistral Vibe
+// Helper function to truncate description to first 20 words
+// Beskrivelserne på forsiden skal ikke skrives fuldt ud - de er for lange til at vise
+function truncateDescription (text, wordLimit = 20) {
+  if (!text) return ''
+  const words = text.split(/\s+/) // Split by whitespace
+  if (words.length <= wordLimit) return text
+  return words.slice(0, wordLimit).join(' ') + '...'
+}
+
 //Hardcodede campagner der vises hvis API ikke henter noget
 const FALLBACK_CAMPAIGNS = [
   {
@@ -105,7 +115,17 @@ function Home () {
 
   const shouldUseFallbackCampaigns =
     (!isLoadingCampaigns && (campaignError || campaigns.length === 0))
-  const campaignsToDisplay = shouldUseFallbackCampaigns ? FALLBACK_CAMPAIGNS : campaigns
+  
+  // Create display versions of campaigns with truncated descriptions
+  const campaignsToDisplay = shouldUseFallbackCampaigns 
+    ? FALLBACK_CAMPAIGNS.map(campaign => ({
+        ...campaign,
+        body_text: campaign.campaign_bio // Use campaign_bio as description for fallback
+      }))
+    : campaigns.map(campaign => ({
+        ...campaign,
+        body_text: truncateDescription(campaign.body_text || campaign.campaign_bio || '')
+      }))
 
   return (
     <div>
