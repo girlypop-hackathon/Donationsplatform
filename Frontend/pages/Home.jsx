@@ -1,27 +1,35 @@
+/*
+Oprettet: 17-03-2026
+Af: Nikoleta
+Beskrivelse: Home page component for the donation platform. Displays grid of campaigns, and a list of organizations. Fetches data from the API and handles loading and error states.
+*/
+
+
 import React, { useEffect, useState } from 'react'
 import CampaignCard from '../components/CampaignCard'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
 const API_PREFIX = API_BASE_URL ? `${API_BASE_URL}/api` : '/api'
 
+//Hardcodede campagner der vises hvis API ikke henter noget
 const FALLBACK_CAMPAIGNS = [
   {
     campaign_id: 'demo-1',
-    image: '/images/elderly-couple.jpg',
+    image: 'public/images/elderly-couple.jpg',
     campaign_bio: 'Help provide care and support for an elderly couple in need.',
     amount_raised: 1200,
     goal_amount: 5000
   },
   {
     campaign_id: 'demo-2',
-    image: '/images/animal-rescue.jpg',
+    image: 'public/images/animal-rescue.jpg',
     campaign_bio: 'Help rescue and care for animals in distress.',
     amount_raised: 900,
     goal_amount: 3500
   },
   {
     campaign_id: 'demo-3',
-    image: '/images/hospital-patient.jpg',
+    image: 'public/images/hospital-patient.jpg',
     campaign_bio: 'Support for a person in hospital needing medical care.',
     amount_raised: 2100,
     goal_amount: 6000

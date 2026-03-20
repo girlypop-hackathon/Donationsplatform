@@ -15,7 +15,7 @@ function setDatabase (database) {
 // GET all campaigns
 router.get('/api/campaigns', async (request, response) => {
   try {
-    const rows = await getManyRows(queries.getAllCampaigns)
+    const rows = await getManyRows(queries.getAllCampaignsWithProviders)
     response.json({
       success: true,
       data: rows

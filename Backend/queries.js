@@ -11,6 +11,12 @@ const queries = {
   // Campaign queries
   getAllCampaigns:
     'SELECT *, COALESCE(amount_raised, 0) AS amount_raised FROM campaigns',
+  getAllCampaignsWithProviders: `SELECT 
+    campaigns.*, 
+    COALESCE(amount_raised, 0) AS amount_raised,
+    providers.name AS provider_name
+  FROM campaigns 
+  LEFT JOIN providers ON campaigns.provider_id = providers.organization_id`,
 
   // User/donation queries (since there's no separate users table, we'll use donations)
   getAllUsers: 'SELECT DISTINCT user_name, email FROM donations',
