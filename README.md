@@ -27,14 +27,18 @@ Projektet er bygget med **React** og **Vite**.
 2. Åbn`http://localhost:5173`
 
 ### Backend server
+
 1. Start og sæt databasen op
-    ```
-   cd Backend 
+
+   ```
+   cd Backend
 
    npm run start-with-setup
    ```
+
 2. Start når databasen allerede er sat op tidligere
-    ```
+
+   ```
    cd Backend
 
    npm start
@@ -65,5 +69,3 @@ Der er nu en GitHub Actions workflow i `.github/workflows/lint.yml`.
 ## AI prompt
 
 spec kit - hvordan foreslår de at man udvikler med AI. Laver kravspekifekation og man vericiferer
-
-
