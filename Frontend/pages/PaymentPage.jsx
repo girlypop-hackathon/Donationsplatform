@@ -1,3 +1,9 @@
+/*
+Oprettet: 18-03-2026
+Af: Linea og Mistral Vibe
+Beskrivelse: Betalingsside med mulighed for anonym donation
+*/
+
 import React, { useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 
@@ -10,6 +16,8 @@ function createInitialPaymentForm (initialAmount) {
     userName: '',
     email: '',
     accountNumber: '',
+    isAnonymousDonation: false,
+    taxDeduction: false,
     isSubscription: false,
     amount: initialAmount > 0 ? String(initialAmount) : '',
     generalNewsletter: false
@@ -45,6 +53,7 @@ function PaymentPage () {
 
   const campaignId = Number(id)
   const amountValue = Number(paymentForm.amount)
+  const shouldDisableCredentialFields = paymentForm.isAnonymousDonation
 
   // Updates text and number input values in the payment form.
   function handleInputChange (event) {
@@ -64,22 +73,40 @@ function PaymentPage () {
     }))
   }
 
+  // Toggles anonymous donation and clears personal fields when anonymity is enabled.
+  function handleAnonymousToggle (event) {
+    const isAnonymousDonation = event.target.checked
+
+    setPaymentForm((previousPaymentForm) => ({
+      ...previousPaymentForm,
+      isAnonymousDonation,
+      userName: isAnonymousDonation ? '' : previousPaymentForm.userName,
+      email: isAnonymousDonation ? '' : previousPaymentForm.email,
+      accountNumber: isAnonymousDonation ? '' : previousPaymentForm.accountNumber,
+      taxDeduction: isAnonymousDonation ? false : previousPaymentForm.taxDeduction,
+      isSubscription: isAnonymousDonation ? false : previousPaymentForm.isSubscription,
+      generalNewsletter: isAnonymousDonation ? false : previousPaymentForm.generalNewsletter
+    }))
+  }
+
   // Validates required payment form fields before submission.
   function validatePaymentForm () {
     if (!Number.isFinite(campaignId) || campaignId <= 0) {
       return 'Invalid campaign id.'
     }
 
-    if (paymentForm.userName.trim().length < 2) {
-      return 'Please enter your name.'
-    }
+    if (!paymentForm.isAnonymousDonation) {
+      if (paymentForm.userName.trim().length < 2) {
+        return 'Please enter your name.'
+      }
 
-    if (!paymentForm.email.includes('@')) {
-      return 'Please enter a valid email.'
-    }
+      if (!paymentForm.email.includes('@')) {
+        return 'Please enter a valid email.'
+      }
 
-    if (paymentForm.accountNumber.trim().length < 3) {
-      return 'Please enter a valid account number.'
+      if (paymentForm.accountNumber.trim().length < 3) {
+        return 'Please enter a valid account number.'
+      }
     }
 
     if (!Number.isFinite(amountValue) || amountValue <= 0) {
@@ -111,9 +138,11 @@ function PaymentPage () {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          user_name: paymentForm.userName.trim(),
-          email: paymentForm.email.trim(),
-          account_number: paymentForm.accountNumber.trim(),
+          user_name: paymentForm.isAnonymousDonation ? 'Anonymous' : paymentForm.userName.trim(),
+          email: paymentForm.isAnonymousDonation ? 'Anonymous' : paymentForm.email.trim(),
+          account_number: paymentForm.isAnonymousDonation ? 'Anonymous' : paymentForm.accountNumber.trim(),
+          anonymous_donation: paymentForm.isAnonymousDonation,
+          tax_deduction: paymentForm.taxDeduction,
           is_subscription: paymentForm.isSubscription,
           amount: amountValue,
           general_newsletter: paymentForm.generalNewsletter
@@ -154,7 +183,9 @@ function PaymentPage () {
           type='text'
           value={paymentForm.userName}
           onChange={handleInputChange}
-          required
+          required={!paymentForm.isAnonymousDonation}
+          disabled={shouldDisableCredentialFields}
+          className={shouldDisableCredentialFields ? 'payment-input-disabled' : ''}
         />
 
         <label htmlFor='email'>Email</label>
@@ -164,7 +195,9 @@ function PaymentPage () {
           type='email'
           value={paymentForm.email}
           onChange={handleInputChange}
-          required
+          required={!paymentForm.isAnonymousDonation}
+          disabled={shouldDisableCredentialFields}
+          className={shouldDisableCredentialFields ? 'payment-input-disabled' : ''}
         />
 
         <label htmlFor='accountNumber'>Account number</label>
@@ -174,8 +207,31 @@ function PaymentPage () {
           type='text'
           value={paymentForm.accountNumber}
           onChange={handleInputChange}
-          required
+          required={!paymentForm.isAnonymousDonation}
+          disabled={shouldDisableCredentialFields}
+          className={shouldDisableCredentialFields ? 'payment-input-disabled' : ''}
         />
+
+        <label className='payment-checkbox'>
+          <input
+            name='isAnonymousDonation'
+            type='checkbox'
+            checked={paymentForm.isAnonymousDonation}
+            onChange={handleAnonymousToggle}
+          />
+          Make this donation anonymous
+        </label>
+
+        <label className='payment-checkbox'>
+          <input
+            name='taxDeduction'
+            type='checkbox'
+            checked={paymentForm.taxDeduction}
+            onChange={handleCheckboxChange}
+            disabled={paymentForm.isAnonymousDonation}
+          />
+          Skattefradrag
+        </label>
 
         <label htmlFor='amount'>Amount (DKK)</label>
         <input
@@ -194,6 +250,7 @@ function PaymentPage () {
             type='checkbox'
             checked={paymentForm.isSubscription}
             onChange={handleCheckboxChange}
+            disabled={paymentForm.isAnonymousDonation}
           />
           Receive campaign updates
         </label>
@@ -204,6 +261,7 @@ function PaymentPage () {
             type='checkbox'
             checked={paymentForm.generalNewsletter}
             onChange={handleCheckboxChange}
+            disabled={paymentForm.isAnonymousDonation}
           />
           Subscribe to newsletter
         </label>

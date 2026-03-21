@@ -1,8 +1,15 @@
+/*
+Oprettet: 18-03-2026
+Af: Linea og Mistral Vibe
+Beskrivelse: Kortvisning af kampagne med billede, status og link
+*/
+
 import React from 'react'
 import { Link } from 'react-router-dom'
 import ProgressBar from './ProgressBar'
+import { resolveCampaignImageSource } from '../utils/imagePaths'
 
-const FALLBACK_IMAGE = 'https://placehold.co/600x400?text=Campaign'
+const FALLBACK_IMAGE = resolveCampaignImageSource('animal-rescue.jpg')
 
 function CampaignCard ({ campaign }) {
   if (!campaign) {
@@ -16,7 +23,7 @@ function CampaignCard ({ campaign }) {
   return (
     <div className='card'>
       <img
-        src={campaign.image || FALLBACK_IMAGE}
+        src={resolveCampaignImageSource(campaign.image, 'animal-rescue.jpg')}
         alt={campaign.campaign_bio || 'Animal campaign'}
         onError={(event) => {
           event.currentTarget.src = FALLBACK_IMAGE

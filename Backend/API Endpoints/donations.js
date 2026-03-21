@@ -1,5 +1,9 @@
-// donations.js - API endpoints for donations table
-// Handles all donation-related operations including user management, email notifications, and milestone processing
+/*
+Oprettet: 18-03-2026
+Af: Linea og Mistral Vibe
+Beskrivelse: API endpoints for donations including anonymous donor handling
+*/
+
 const express = require('express')
 const queries = require('../queries')
 const emailService = require('../emailService')
@@ -11,6 +15,21 @@ let db
 
 function setDatabase (database) {
   db = database
+}
+
+// Normalizes campaign donation payload and overwrites personal fields for anonymous donations.
+function buildCampaignDonationRecord (requestBody) {
+  const isAnonymousDonation = Boolean(requestBody?.anonymous_donation)
+  const anonymousValue = 'Anonymous'
+
+  return {
+    userName: isAnonymousDonation ? anonymousValue : (requestBody?.user_name || anonymousValue),
+    email: isAnonymousDonation ? anonymousValue : (requestBody?.email || ''),
+    accountNumber: isAnonymousDonation ? anonymousValue : (requestBody?.account_number || ''),
+    isSubscription: isAnonymousDonation ? false : Boolean(requestBody?.is_subscription),
+    generalNewsletter: isAnonymousDonation ? false : Boolean(requestBody?.general_newsletter),
+    isAnonymousDonation
+  }
 }
 
 // GET all users (from donations table)
@@ -133,11 +152,7 @@ router.post('/api/donations', async (request, response) => {
 router.post('/api/campaigns/:id/donations', (req, res) => {
   const campaignId = Number(req.params.id)
   const amount = Number(req.body?.amount)
-  const userName = req.body?.user_name || 'Anonymous Donor'
-  const email = req.body?.email || ''
-  const accountNumber = req.body?.account_number || ''
-  const isSubscription = Boolean(req.body?.is_subscription)
-  const generalNewsletter = Boolean(req.body?.general_newsletter)
+  const donationRecord = buildCampaignDonationRecord(req.body)
 
   if (!Number.isFinite(campaignId) || campaignId <= 0) {
     return res.status(400).json({ error: 'Valid campaign id is required' })
@@ -151,12 +166,12 @@ router.post('/api/campaigns/:id/donations', (req, res) => {
     queries.createDonation,
     [
       campaignId,
-      userName,
-      email,
-      accountNumber,
-      isSubscription,
+      donationRecord.userName,
+      donationRecord.email,
+      donationRecord.accountNumber,
+      donationRecord.isSubscription,
       amount,
-      generalNewsletter
+      donationRecord.generalNewsletter
     ],
     function (err) {
       if (err) {
@@ -191,12 +206,13 @@ router.post('/api/campaigns/:id/donations', (req, res) => {
                 data: {
                   donation_id: donationId,
                   campaign_id: campaignId,
-                  user_name: userName,
-                  email,
-                  account_number: accountNumber,
-                  is_subscription: isSubscription,
+                  user_name: donationRecord.userName,
+                  email: donationRecord.email,
+                  account_number: donationRecord.accountNumber,
+                  is_subscription: donationRecord.isSubscription,
                   amount,
-                  general_newsletter: generalNewsletter,
+                  general_newsletter: donationRecord.generalNewsletter,
+                  anonymous_donation: donationRecord.isAnonymousDonation,
                   amount_raised: row?.amount_raised
                 }
               })

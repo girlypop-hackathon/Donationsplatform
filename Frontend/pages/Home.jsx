@@ -1,5 +1,12 @@
+/*
+Oprettet: 18-03-2026
+Af: Linea og Mistral Vibe
+Beskrivelse: Forside med kampagner og organisationer
+*/
+
 import React, { useEffect, useState } from 'react'
 import CampaignCard from '../components/CampaignCard'
+import { resolveCampaignImageSource } from '../utils/imagePaths'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
 const API_PREFIX = API_BASE_URL ? `${API_BASE_URL}/api` : '/api'
@@ -7,21 +14,21 @@ const API_PREFIX = API_BASE_URL ? `${API_BASE_URL}/api` : '/api'
 const FALLBACK_CAMPAIGNS = [
   {
     campaign_id: 'demo-1',
-    image: '/images/elderly-couple.jpg',
+    image: resolveCampaignImageSource('elderly-couple.jpg'),
     campaign_bio: 'Help provide care and support for an elderly couple in need.',
     amount_raised: 1200,
     goal_amount: 5000
   },
   {
     campaign_id: 'demo-2',
-    image: '/images/animal-rescue.jpg',
+    image: resolveCampaignImageSource('animal-rescue.jpg'),
     campaign_bio: 'Help rescue and care for animals in distress.',
     amount_raised: 900,
     goal_amount: 3500
   },
   {
     campaign_id: 'demo-3',
-    image: '/images/hospital-patient.jpg',
+    image: resolveCampaignImageSource('hospital-patient.jpg'),
     campaign_bio: 'Support for a person in hospital needing medical care.',
     amount_raised: 2100,
     goal_amount: 6000

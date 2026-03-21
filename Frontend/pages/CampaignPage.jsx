@@ -1,6 +1,13 @@
+/*
+Oprettet: 18-03-2026
+Af: Linea og Mistral Vibe
+Beskrivelse: Kampagneside med donationstrin og billedvisning
+*/
+
 import React, { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import ProgressBar from '../components/ProgressBar'
+import { resolveCampaignImageSource } from '../utils/imagePaths'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
 const API_PREFIX = API_BASE_URL ? `${API_BASE_URL}/api` : '/api'
@@ -114,10 +121,10 @@ function CampaignPage () {
   return (
     <div className='campaign-page'>
       <img
-        src={campaign.image || 'https://placehold.co/800x400?text=Campaign'}
+        src={resolveCampaignImageSource(campaign.image, 'animal-rescue.jpg')}
         alt={campaign.campaign_bio || 'campaign'}
         onError={(event) => {
-          event.currentTarget.src = 'https://placehold.co/800x400?text=Campaign'
+          event.currentTarget.src = resolveCampaignImageSource('animal-rescue.jpg')
         }}
       />
 

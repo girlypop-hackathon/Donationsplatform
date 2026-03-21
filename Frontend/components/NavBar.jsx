@@ -1,5 +1,12 @@
+/*
+Oprettet: 18-03-2026
+Af: Linea og Mistral Vibe
+Beskrivelse: Navigationsbar med links og logo til donationsplatformen
+*/
+
 import React from 'react'
 import { Link } from 'react-router-dom'
+import { resolveLogoImageSource } from '../utils/imagePaths'
 
 function Navbar ({ isAuthenticated, authUser, onLogout }) {
   const navItemStyle = { color: '#001A4D' }
@@ -23,7 +30,7 @@ function Navbar ({ isAuthenticated, authUser, onLogout }) {
         <h1 className='logo'>FundTogether</h1>
         <img
           className='logo-icon'
-          src='/images/fundtogether-logo.png'
+          src={resolveLogoImageSource('fundtogether-logo.png')}
           alt='FundTogether logo'
         />
       </div>
