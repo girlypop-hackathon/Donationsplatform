@@ -12,7 +12,8 @@
     "setup": "node setup.js",
     "clean": "node complete_cleanup.js",
     "verify": "node verify_cleanup.js",
-    "migrate": "node migrate_to_providers.js"
+    "migrate": "node migrate_to_providers.js",
+    "start-with-setup": "npm run setup && npm start"
   },
   "keywords": [],
   "author": "",

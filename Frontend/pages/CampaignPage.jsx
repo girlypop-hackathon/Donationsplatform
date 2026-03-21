@@ -114,7 +114,9 @@ function CampaignPage () {
   return (
     <div className='campaign-page'>
       <img
-        src={campaign.image || 'https://placehold.co/800x400?text=Campaign'}
+        src={campaign.image
+          ? campaign.image
+          : 'https://placehold.co/800x400?text=Campaign'}
         alt={campaign.campaign_bio || 'campaign'}
         onError={(event) => {
           event.currentTarget.src = 'https://placehold.co/800x400?text=Campaign'

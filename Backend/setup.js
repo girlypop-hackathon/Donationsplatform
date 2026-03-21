@@ -236,28 +236,28 @@ function insertSampleData (db, onComplete) {
     {
       name: 'Dyrenes Beskyttelse',
       logo: 'logo1.png',
-      bio: 'Dedicated to animal protection in Denmark.',
+      bio: 'Dedicated to animal protection in Denmark',
       website_link: 'https://www.dyrenesbeskyttelse.dk',
       is_organization: true
     },
     {
       name: 'Dyreværnet',
       logo: 'logo2.png',
-      bio: 'Working for animal welfare and rights.',
+      bio: 'Working for animal welfare and rights',
       website_link: 'https://www.dyreværnet.dk',
       is_organization: true
     },
     {
       name: 'OSA',
       logo: 'logo3.png',
-      bio: 'Organization for animal shelters.',
+      bio: 'Organization for animal shelters',
       website_link: 'https://www.osa.dk',
       is_organization: true
     },
     {
       name: 'WWF',
       logo: 'logo4.png',
-      bio: 'World Wildlife Fund for conservation.',
+      bio: 'World Wildlife Fund for conservation',
       website_link: 'https://www.wwf.org',
       is_organization: true
     }
@@ -278,48 +278,50 @@ function insertSampleData (db, onComplete) {
   providerStmt.finalize()
 
   // Insert campaigns
+  //body_text by ChatGPT
   const campaigns = [
-    {
-      provider_id: 1,
-      image: 'campaign1.jpg',
-      campaign_bio: 'Help save abandoned pets.',
-      body_text: 'Detailed description...',
-      goal_amount: 5000,
-      milestone_1: 1000,
-      milestone_2: 2500,
-      milestone_3: 4000
-    },
-    {
-      provider_id: 2,
-      image: 'campaign2.jpg',
-      campaign_bio: 'Support wildlife conservation.',
-      body_text: 'Detailed description...',
-      goal_amount: 10000,
-      milestone_1: 2000,
-      milestone_2: 5000,
-      milestone_3: 8000
-    },
-    {
-      provider_id: 3,
-      image: 'campaign3.jpg',
-      campaign_bio: 'Aid animal shelters.',
-      body_text: 'Detailed description...',
-      goal_amount: 3000,
-      milestone_1: 500,
-      milestone_2: 1500,
-      milestone_3: 2500
-    },
-    {
-      provider_id: 4,
-      image: 'campaign4.jpg',
-      campaign_bio: 'Protect endangered species.',
-      body_text: 'Detailed description...',
-      goal_amount: 15000,
-      milestone_1: 3000,
-      milestone_2: 7500,
-      milestone_3: 12000
-    }
-  ]
+  {
+    provider_id: 1,
+    image: 'https://blog.gudog.dk/dk/wp-content/uploads/sites/3/2019/10/pets-3715733_1920.jpg',
+    campaign_bio: 'Help save abandoned pets',
+    body_text: 'Thousands of pets are abandoned every year and left without food, shelter, or care. This campaign focuses on rescuing vulnerable animals and giving them a second chance at life. With your support, we can provide medical treatment, vaccinations, and safe temporary homes while we work to find loving families. We collaborate with local shelters and volunteers who are dedicated to improving animal welfare in our communities. Every contribution helps cover essential costs and ensures that no animal is left behind. Together, we can create a future where every pet is cared for, protected, and given the opportunity to thrive in a safe and loving environment.',
+    goal_amount: 5000,
+    milestone_1: 1000,
+    milestone_2: 2500,
+    milestone_3: 4000
+  },
+  {
+    provider_id: 2,
+    image: 'https://animalcharityevaluators.org/wp-content/uploads/2023/07/jaguar-wildlife@2x.jpg',
+    campaign_bio: 'Support wildlife conservation',
+    body_text: 'Wildlife around the world is under increasing threat due to habitat loss, climate change, and human activity. This campaign is dedicated to protecting natural ecosystems and preserving biodiversity for future generations. Donations will support conservation projects, including habitat restoration, anti-poaching efforts, and research initiatives that help us better understand endangered species. By working with experienced conservation teams on the ground, we ensure that resources are used effectively and responsibly. Your contribution will directly impact the survival of countless species and help maintain the delicate balance of nature. Together, we can protect wildlife and ensure that these incredible animals continue to exist in the wild.',
+    goal_amount: 10000,
+    milestone_1: 2000,
+    milestone_2: 5000,
+    milestone_3: 8000
+  },
+  {
+    provider_id: 3,
+    image: 'https://www.shelteranimalscount.org/wp-content/uploads/2022/09/press-mention-downey-patriot-730x500.jpg',
+    campaign_bio: 'Aid animal shelters',
+    body_text: 'Animal shelters play a crucial role in caring for animals that have been lost, abandoned, or rescued from unsafe conditions. This campaign aims to provide shelters with the resources they need to continue their vital work. Funds will go toward food, medical supplies, facility maintenance, and staffing support. Many shelters operate under limited budgets, making it difficult to meet the growing demand for their services. By contributing, you help ensure that animals receive proper care, attention, and a safe place to stay while waiting for adoption. Together, we can strengthen these shelters and improve the lives of countless animals in need of compassion and protection.',
+    goal_amount: 3000,
+    milestone_1: 500,
+    milestone_2: 1500,
+    milestone_3: 2500
+  },
+  {
+    provider_id: 4,
+    image: 'https://cdn.discovermagazine.com/assets/image/46911/red_panda_lead-x.jpg',
+    campaign_bio: 'Protect endangered species',
+    body_text: 'Many species across the globe are at risk of extinction due to environmental changes and human impact. This campaign is focused on protecting endangered animals by supporting targeted conservation programs. Your donations will help fund habitat preservation, breeding programs, and education initiatives aimed at reducing human-wildlife conflict. We partner with experts and local communities to create sustainable solutions that protect both wildlife and the people who share their environments. Every contribution plays a role in preventing extinction and preserving the planet’s natural heritage. Together, we can take meaningful action to ensure that endangered species are not lost, but instead given a chance to recover and thrive.',
+    goal_amount: 15000,
+    milestone_1: 3000,
+    milestone_2: 7500,
+    milestone_3: 12000
+  }
+];
+
 
   const campaignStmt = db.prepare(
     'INSERT INTO campaigns (provider_id, image, campaign_bio, body_text, goal_amount, amount_raised, milestone_1, milestone_2, milestone_3) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
