@@ -1,7 +1,7 @@
 /*
 Oprettet: 18-03-2026
-Af: Linea
-Beskrivelse: - SQL queries for the donation platform
+Af: Linea og Mistral Vibe
+Beskrivelse: SQL queries for the donation platform
 */
 
 const queries = {
@@ -48,6 +48,12 @@ const queries = {
     AND is_subscription = 1
     AND email IS NOT NULL
     AND TRIM(email) != ''`,
+  getCampaignDonorsWithEmail: `SELECT DISTINCT email, user_name
+  FROM donations
+  WHERE campaign_id = ?
+    AND email IS NOT NULL
+    AND TRIM(email) != ''
+    AND email LIKE '%@%'`,
   getNewsletterSubscribers: `SELECT DISTINCT email, user_name
   FROM donations
   WHERE general_newsletter = 1

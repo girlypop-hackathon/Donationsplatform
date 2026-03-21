@@ -1,7 +1,7 @@
 /*
 Oprettet: 18-03-2026
-Af: Copilot
-Beskrivelse: Centralized email helpers for thank-you emails, milestones, campaign close and newsletters.
+Af: Linea og Mistral Vibe
+Beskrivelse: Centralized email helpers for thank-you emails, milestones, goal reached, campaign close and newsletters.
 */
 
 const nodemailer = require('nodemailer')
@@ -136,6 +136,21 @@ function buildMilestoneFollowUpEmail ({
 }
 
 /**
+ * Builds an email sent when a campaign reaches its full goal amount.
+ */
+function buildGoalReachedEmail ({
+  donorName,
+  campaignBio,
+  goalAmount,
+  totalRaisedAmount
+}) {
+  return {
+    subjectLine: `Campaign goal reached: ${goalAmount} DKK`,
+    messageText: `Hi ${donorName},\n\nAmazing news from "${campaignBio}": the campaign has reached its goal of ${goalAmount} DKK and now stands at ${totalRaisedAmount} DKK.\n\nThank you for helping us reach this target.`
+  }
+}
+
+/**
  * Builds the campaign close email for donors subscribed to campaign updates.
  */
 function buildCampaignCloseEmail ({
@@ -162,6 +177,7 @@ function buildNewsletterEmail ({ donorName, newsletterTitle, newsletterBody }) {
 module.exports = {
   buildCampaignCloseEmail,
   buildDedicatedFollowUpEmail,
+  buildGoalReachedEmail,
   buildMilestoneFollowUpEmail,
   buildNewsletterEmail,
   buildThankYouEmailForTier,
