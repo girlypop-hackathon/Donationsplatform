@@ -210,6 +210,48 @@ body{
   cursor: not-allowed;
 }
 
+/* Campaign Page Styles */
+.campaign-page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.campaign-page img {
+  width: 100%;
+  max-height: 400px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  display: block;
+}
+
+.campaign-page h1 {
+  color: #0B2EAE;
+  margin-bottom: 15px;
+  font-size: 28px;
+}
+
+.campaign-page p {
+  line-height: 1.6;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+@media (max-width: 768px) {
+  .campaign-page {
+    padding: 15px;
+  }
+  
+  .campaign-page img {
+    max-height: 300px;
+  }
+  
+  .campaign-page h1 {
+    font-size: 24px;
+  }
+}
+
 .donate-btn{
   width:100%;
   padding:10px;
