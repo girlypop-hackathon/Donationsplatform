@@ -49,7 +49,7 @@ router.get('/api/providers/:id/campaigns', async (request, response) => {
 router.get('/api/campaigns/:id', async (request, response) => {
   try {
     const campaignId = request.params.id
-    const row = await getSingleRow(queries.getCampaignById, [campaignId])
+    const row = await getSingleRow(queries.getCampaignWithProviderName, [campaignId])
 
     if (!row) {
       response.status(404).json({ error: 'Campaign not found' })

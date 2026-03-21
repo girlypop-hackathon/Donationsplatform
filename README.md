@@ -65,3 +65,5 @@ Der er nu en GitHub Actions workflow i `.github/workflows/lint.yml`.
 ## AI prompt
 
 spec kit - hvordan foreslår de at man udvikler med AI. Laver kravspekifekation og man vericiferer
+
+

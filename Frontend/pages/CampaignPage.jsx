@@ -122,13 +122,15 @@ function CampaignPage () {
           event.currentTarget.src = 'https://placehold.co/800x400?text=Campaign'
         }}
       />
+      <h1>{`${campaign.campaign_bio}`}</h1>
+      {campaign.provider_name && (
+        <p className="provider-info">Organized by: {campaign.provider_name}</p>
+      )}
 
-      <h1>{`Campaign #${campaign.campaign_id}`}</h1>
-
-      <p>{campaign.body_text || campaign.campaign_bio || 'No description available yet.'}</p>
+      <p>{campaign.body_text || 'No description available yet.'}</p>
 
       <ProgressBar value={raisedAmount} max={goalAmount} />
-      <p>{`Raised: ${raisedAmount} / Goal: ${goalAmount}`}</p>
+      <h3>{`Raised: ${raisedAmount} / Goal: ${goalAmount} DKK`}</h3>
 
       <div className='donation-box'>
         <h3>Donate</h3>
