@@ -1,0 +1,42 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Build image
+        run: docker build -t ghcr.io/girlypop-hackathon/donationsplatform:latest .
+
+      - name: Push image
+        run: docker push ghcr.io/girlypop-hackathon/donationsplatform:latest
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+      - name: Deploy to VM
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VM_USER }}@${{ secrets.VM_IP }} << 'EOF'
+
+          docker pull ghcr.io/girlypop-hackathon/donationsplatform:latest
+
+          docker stop app || true
+          docker rm app || true
+
+          docker run -d -p 80:3000 --name app \
+          ghcr.io/girlypop-hackathon/donationsplatform:latest
+
+          EOF
