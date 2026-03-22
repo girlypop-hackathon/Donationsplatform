@@ -94,8 +94,23 @@ Write-Host "VM oprettet!"
 Write-Host "Åbner porte..."
 
 az vm open-port --resource-group $resourceGroupName --name $vmName --port 22
-az vm open-port --resource-group $resourceGroupName --name $vmName --port 80
-az vm open-port --resource-group $resourceGroupName --name $vmName --port 443
+az vm open-port `
+    --resource-group $resourceGroupName `
+    --name $vmName `
+    --port 22 `
+    --priority 301
+
+az vm open-port `
+    --resource-group $resourceGroupName `
+    --name $vmName `
+    --port 80 `
+    --priority 301
+
+az vm open-port `
+    --resource-group $resourceGroupName `
+    --name $vmName `
+    --port 443 `
+    --priority 301
 
 
 # ==============================
