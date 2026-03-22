@@ -11,6 +11,7 @@ import CreateCampaign from "./pages/CreateCampaign";
 import Category from "./pages/Category";
 import Info from "./pages/Info";
 import SignIn from "./pages/SignIn";
+import ActivateAccount from "./pages/ActivateAccount";
 import Search from "./pages/Search";
 import Dashboard from "./pages/Dashboard";
 
@@ -128,6 +129,10 @@ function App() {
                 isCheckingSession={isCheckingSession}
               />
             }
+          />
+          <Route
+            path="/activate"
+            element={<ActivateAccount onLogin={authApi.login} />}
           />
           <Route
             path="/dashboard"

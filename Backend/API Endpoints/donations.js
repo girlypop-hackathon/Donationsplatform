@@ -8,9 +8,14 @@ const router = express.Router();
 
 // Database connection will be passed from main endpoints.js
 let db;
+let authHelpers = null;
 
 function setDatabase(database) {
   db = database;
+}
+
+function setAuthHelpers(helpers) {
+  authHelpers = helpers;
 }
 
 // GET all users (from donations table)
@@ -64,6 +69,26 @@ router.post("/api/donations", async (request, response) => {
       return;
     }
 
+    if (!authHelpers) {
+      response.status(500).json({
+        success: false,
+        error: "Auth helpers are not configured",
+      });
+      return;
+    }
+
+    const userResult = await authHelpers.findOrCreateUserForEmail({
+      email: donationInput.email,
+      name: donationInput.userName,
+    });
+    if (!userResult.ok) {
+      response.status(400).json({
+        success: false,
+        error: userResult.error,
+      });
+      return;
+    }
+
     const campaignRow = await getSingleRow(
       queries.getCampaignWithProviderName,
       [donationInput.campaignId],
@@ -78,6 +103,7 @@ router.post("/api/donations", async (request, response) => {
 
     const donationInsertResult = await runQuery(queries.insertDonation, [
       donationInput.campaignId,
+      userResult.user.user_id,
       donationInput.userName,
       donationInput.email,
       donationInput.accountNumber,
@@ -125,6 +151,10 @@ router.post("/api/donations", async (request, response) => {
       totalRaisedAmount,
     );
 
+    if (userResult.newlyActivatable) {
+      await authHelpers.sendActivationEmailForUser(userResult.user);
+    }
+
     response.status(201).json({
       success: true,
       data: {
@@ -162,65 +192,98 @@ router.post("/api/campaigns/:id/donations", (req, res) => {
       .json({ error: "A valid donation amount is required" });
   }
 
-  db.run(
-    queries.createDonation,
-    [
-      campaignId,
-      userName,
+  if (!authHelpers) {
+    res.status(500).json({ error: "Auth helpers are not configured" });
+    return;
+  }
+
+  authHelpers
+    .findOrCreateUserForEmail({
       email,
-      accountNumber,
-      isSubscription,
-      amount,
-      generalNewsletter,
-    ],
-    function (err) {
-      if (err) {
-        res.status(500).json({ error: err.message });
-        return;
+      name: userName,
+    })
+    .then((userResult) => {
+      if (!userResult.ok) {
+        res.status(400).json({ error: userResult.error });
+        return null;
       }
 
-      const donationId = this.lastID;
-
-      // Update campaign amount_raised
       db.run(
-        "UPDATE campaigns SET amount_raised = amount_raised + ? WHERE campaign_id = ?",
-        [amount, campaignId],
-        (updateErr) => {
-          if (updateErr) {
-            res.status(500).json({ error: updateErr.message });
+        queries.createDonation,
+        [
+          campaignId,
+          userResult.user.user_id,
+          userName,
+          email,
+          accountNumber,
+          isSubscription,
+          amount,
+          generalNewsletter,
+        ],
+        function (err) {
+          if (err) {
+            res.status(500).json({ error: err.message });
             return;
           }
 
-          // Fetch updated campaign to return amount_raised
-          db.get(
-            "SELECT amount_raised FROM campaigns WHERE campaign_id = ?",
-            [campaignId],
-            (getErr, row) => {
-              if (getErr) {
-                res.status(500).json({ error: getErr.message });
+          const donationId = this.lastID;
+
+          db.run(
+            "UPDATE campaigns SET amount_raised = amount_raised + ? WHERE campaign_id = ?",
+            [amount, campaignId],
+            async (updateErr) => {
+              if (updateErr) {
+                res.status(500).json({ error: updateErr.message });
                 return;
               }
 
-              res.status(201).json({
-                success: true,
-                data: {
-                  donation_id: donationId,
-                  campaign_id: campaignId,
-                  user_name: userName,
-                  email,
-                  account_number: accountNumber,
-                  is_subscription: isSubscription,
-                  amount,
-                  general_newsletter: generalNewsletter,
-                  amount_raised: row?.amount_raised,
+              if (userResult.newlyActivatable) {
+                try {
+                  await authHelpers.sendActivationEmailForUser(userResult.user);
+                } catch (emailError) {
+                  console.error(
+                    "Could not send activation email after donation:",
+                    emailError.message,
+                  );
+                }
+              }
+
+              db.get(
+                "SELECT amount_raised FROM campaigns WHERE campaign_id = ?",
+                [campaignId],
+                (getErr, row) => {
+                  if (getErr) {
+                    res.status(500).json({ error: getErr.message });
+                    return;
+                  }
+
+                  res.status(201).json({
+                    success: true,
+                    data: {
+                      donation_id: donationId,
+                      campaign_id: campaignId,
+                      user_id: userResult.user.user_id,
+                      user_name: userName,
+                      email,
+                      account_number: accountNumber,
+                      is_subscription: isSubscription,
+                      amount,
+                      general_newsletter: generalNewsletter,
+                      amount_raised: row?.amount_raised,
+                    },
+                  });
                 },
-              });
+              );
             },
           );
         },
       );
-    },
-  );
+
+      return null;
+    })
+    .catch((error) => {
+      res.status(500).json({ error: error.message });
+    });
 });
 
 // Helper functions
@@ -395,4 +458,4 @@ async function processReachedMilestones(campaignRow, totalRaisedAmount) {
   return triggeredMilestones;
 }
 
-module.exports = { router, setDatabase };
+module.exports = { router, setDatabase, setAuthHelpers };

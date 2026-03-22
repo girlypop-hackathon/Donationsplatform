@@ -18,8 +18,9 @@ const queries = {
   FROM campaigns 
   LEFT JOIN providers ON campaigns.provider_id = providers.organization_id`,
 
-  // User/donation queries (since there's no separate users table, we'll use donations)
-  getAllUsers: "SELECT DISTINCT user_name, email FROM donations",
+  // User queries
+  getAllUsers:
+    "SELECT user_id, name, email, status, created_at FROM users ORDER BY created_at DESC",
 
   // Specific GET queries
   getCampaignsByProvider:
@@ -31,13 +32,14 @@ const queries = {
   // Donation write and campaign progress queries
   insertDonation: `INSERT INTO donations (
     campaign_id,
+    user_id,
     user_name,
     email,
     account_number,
     is_subscription,
     amount,
     general_newsletter
-  ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
   getCampaignWithProviderName: `SELECT
     campaigns.*, providers.name AS provider_name
   FROM campaigns
@@ -79,7 +81,7 @@ const queries = {
   createCampaign:
     "INSERT INTO campaigns (provider_id, image, campaign_bio, body_text, goal_amount, amount_raised, milestone_1, milestone_2, milestone_3) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
   createDonation:
-    "INSERT INTO donations (campaign_id, user_name, email, account_number, is_subscription, amount, general_newsletter) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    "INSERT INTO donations (campaign_id, user_id, user_name, email, account_number, is_subscription, amount, general_newsletter) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
 };
 
 module.exports = queries;

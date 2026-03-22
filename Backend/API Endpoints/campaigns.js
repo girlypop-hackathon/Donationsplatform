@@ -7,9 +7,14 @@ const router = express.Router();
 
 // Database connection will be passed from main endpoints.js
 let db;
+let authHelpers = null;
 
 function setDatabase(database) {
   db = database;
+}
+
+function setAuthHelpers(helpers) {
+  authHelpers = helpers;
 }
 
 // GET all campaigns
@@ -47,6 +52,37 @@ router.get("/api/providers/:id/campaigns", async (request, response) => {
   }
 });
 
+// GET campaigns created by a specific user
+router.get("/api/users/:id/campaigns", async (request, response) => {
+  try {
+    const userId = Number(request.params.id);
+
+    if (!Number.isFinite(userId) || userId <= 0) {
+      response.status(400).json({ error: "Valid user id is required" });
+      return;
+    }
+
+    const rows = await getManyRows(
+      `SELECT
+        campaigns.*, 
+        COALESCE(campaigns.amount_raised, 0) AS amount_raised,
+        providers.name AS provider_name
+      FROM campaigns
+      LEFT JOIN providers ON campaigns.provider_id = providers.organization_id
+      WHERE campaigns.created_by_user_id = ?
+      ORDER BY campaigns.campaign_id DESC`,
+      [userId],
+    );
+
+    response.json({
+      success: true,
+      data: rows,
+    });
+  } catch (error) {
+    response.status(500).json({ error: error.message });
+  }
+});
+
 // GET campaign by ID
 router.get("/api/campaigns/:id", async (request, response) => {
   try {
@@ -70,7 +106,7 @@ router.get("/api/campaigns/:id", async (request, response) => {
 });
 
 // POST create new campaign
-router.post("/api/campaigns", (req, res) => {
+router.post("/api/campaigns", async (req, res) => {
   const {
     provider_id,
     image,
@@ -81,52 +117,100 @@ router.post("/api/campaigns", (req, res) => {
     milestone_1,
     milestone_2,
     milestone_3,
+    creator_name,
+    creator_email,
   } = req.body;
 
-  if (!provider_id || !campaign_bio || !goal_amount) {
+  if (!provider_id || !campaign_bio || !goal_amount || !creator_email) {
     return res
       .status(400)
       .json({
-        error: "provider_id, campaign_bio, and goal_amount are required",
+        error:
+          "provider_id, campaign_bio, goal_amount and creator_email are required",
       });
   }
 
-  db.run(
-    queries.createCampaign,
-    [
-      provider_id,
-      image,
-      campaign_bio,
-      body_text,
-      goal_amount,
-      amount_raised || 0,
-      milestone_1,
-      milestone_2,
-      milestone_3,
-    ],
-    function (err) {
-      if (err) {
-        res.status(500).json({ error: err.message });
+  if (!authHelpers) {
+    return res.status(500).json({ error: "Auth helpers are not configured" });
+  }
+
+  try {
+    const userResult = await authHelpers.findOrCreateUserForEmail({
+      email: creator_email,
+      name: creator_name,
+    });
+
+    if (!userResult.ok) {
+      return res.status(400).json({ error: userResult.error });
+    }
+
+    const insertResult = await runQuery(
+      `INSERT INTO campaigns (
+        provider_id,
+        image,
+        campaign_bio,
+        body_text,
+        goal_amount,
+        amount_raised,
+        milestone_1,
+        milestone_2,
+        milestone_3,
+        created_by_user_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        provider_id,
+        image,
+        campaign_bio,
+        body_text,
+        goal_amount,
+        amount_raised || 0,
+        milestone_1,
+        milestone_2,
+        milestone_3,
+        userResult.user.user_id,
+      ],
+    );
+
+    if (userResult.newlyActivatable) {
+      await authHelpers.sendActivationEmailForUser(userResult.user);
+    }
+
+    return res.status(201).json({
+      success: true,
+      data: {
+        campaign_id: insertResult.lastId,
+        provider_id,
+        image,
+        campaign_bio,
+        body_text,
+        goal_amount,
+        amount_raised: amount_raised || 0,
+        milestone_1,
+        milestone_2,
+        milestone_3,
+        created_by_user_id: userResult.user.user_id,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+function runQuery(queryText, queryParams = []) {
+  return new Promise((resolve, reject) => {
+    db.run(queryText, queryParams, function onQueryRun(error) {
+      if (error) {
+        reject(error);
         return;
       }
-      res.status(201).json({
-        success: true,
-        data: {
-          campaign_id: this.lastID,
-          provider_id,
-          image,
-          campaign_bio,
-          body_text,
-          goal_amount,
-          amount_raised: amount_raised || 0,
-          milestone_1,
-          milestone_2,
-          milestone_3,
-        },
+
+      resolve({
+        changes: this.changes,
+        lastId: this.lastID,
       });
-    },
-  );
-});
+    });
+  });
+}
 
 // Helper functions
 function getSingleRow(queryText, queryParams = []) {
@@ -153,4 +237,4 @@ function getManyRows(queryText, queryParams = []) {
   });
 }
 
-module.exports = { router, setDatabase };
+module.exports = { router, setDatabase, setAuthHelpers };

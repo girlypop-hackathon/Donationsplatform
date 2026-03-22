@@ -159,7 +159,18 @@ function buildNewsletterEmail({ donorName, newsletterTitle, newsletterBody }) {
   };
 }
 
+/**
+ * Builds the account activation email containing a single-use activation link.
+ */
+function buildAccountActivationEmail({ recipientName, activationLink }) {
+  return {
+    subjectLine: "Activate your Donations Platform account",
+    messageText: `Hi ${recipientName},\n\nAn account has been created for this email on Donations Platform.\n\nActivate your account and set your password using this secure link:\n${activationLink}\n\nThe link expires in 24 hours and can only be used once.\n\nIf you did not expect this email, you can safely ignore it.`,
+  };
+}
+
 module.exports = {
+  buildAccountActivationEmail,
   buildCampaignCloseEmail,
   buildDedicatedFollowUpEmail,
   buildMilestoneFollowUpEmail,

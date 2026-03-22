@@ -9,7 +9,10 @@ function SignIn({ isAuthenticated, onLogin, isCheckingSession }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [infoMessage, setInfoMessage] = useState("");
+  const [devActivationLink, setDevActivationLink] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRequestingActivation, setIsRequestingActivation] = useState(false);
 
   if (!isCheckingSession && isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
@@ -22,6 +25,8 @@ function SignIn({ isAuthenticated, onLogin, isCheckingSession }) {
 
     try {
       setErrorMessage("");
+      setInfoMessage("");
+      setDevActivationLink("");
       setIsSubmitting(true);
 
       const response = await fetch(`${API_PREFIX}/auth/login`, {
@@ -47,6 +52,40 @@ function SignIn({ isAuthenticated, onLogin, isCheckingSession }) {
       setErrorMessage(error.message || "Could not sign in. Try again.");
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function handleRequestActivationLink() {
+    if (!email || !email.includes("@") || isRequestingActivation) {
+      setErrorMessage("Enter a valid email before requesting an activation link.");
+      return;
+    }
+
+    try {
+      setIsRequestingActivation(true);
+      setErrorMessage("");
+      setInfoMessage("");
+      setDevActivationLink("");
+
+      const response = await fetch(`${API_PREFIX}/auth/request-activation`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result?.error || "Could not request activation link");
+      }
+
+      setInfoMessage(result?.data?.message || "Activation email sent.");
+      setDevActivationLink(result?.data?.devActivationLink || "");
+    } catch (error) {
+      setErrorMessage(error.message || "Could not request activation link.");
+    } finally {
+      setIsRequestingActivation(false);
     }
   }
 
@@ -86,9 +125,24 @@ function SignIn({ isAuthenticated, onLogin, isCheckingSession }) {
         </p>
 
         {errorMessage && <p className="auth-error">{errorMessage}</p>}
+        {infoMessage && <p className="auth-success">{infoMessage}</p>}
+        {devActivationLink && (
+          <p className="auth-success">
+            Development activation link: <a href={devActivationLink}>{devActivationLink}</a>
+          </p>
+        )}
 
         <button type="submit" disabled={isSubmitting || isCheckingSession}>
           {isSubmitting ? "Signing in..." : "Sign In"}
+        </button>
+        <button
+          type="button"
+          onClick={handleRequestActivationLink}
+          disabled={isRequestingActivation || isCheckingSession}
+        >
+          {isRequestingActivation
+            ? "Sending activation link..."
+            : "Send activation link"}
         </button>
       </form>
     </section>

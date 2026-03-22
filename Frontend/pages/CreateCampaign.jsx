@@ -9,6 +9,8 @@ function CreateCampaign() {
 
   // Form state
   const [formData, setFormData] = useState({
+    creator_name: "",
+    creator_email: "",
     provider_id: "",
     image: "",
     campaign_bio: "",
@@ -60,11 +62,20 @@ function CreateCampaign() {
 
     // Basic validation
     if (
+      !formData.creator_name ||
+      !formData.creator_email ||
       !formData.provider_id ||
       !formData.campaign_bio ||
       !formData.goal_amount
     ) {
-      setError("Provider, campaign bio, and goal amount are required");
+      setError(
+        "Creator name, creator email, provider, campaign bio, and goal amount are required",
+      );
+      return;
+    }
+
+    if (!formData.creator_email.includes("@")) {
+      setError("Creator email must be a valid email");
       return;
     }
 
@@ -87,6 +98,8 @@ function CreateCampaign() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          creator_name: formData.creator_name.trim(),
+          creator_email: formData.creator_email.trim(),
           provider_id: parseInt(formData.provider_id),
           image: formData.image || "https://placehold.co/800x400?text=Campaign",
           campaign_bio: formData.campaign_bio,
@@ -109,6 +122,8 @@ function CreateCampaign() {
 
       // Reset form
       setFormData({
+        creator_name: "",
+        creator_email: "",
         provider_id: "",
         image: "",
         campaign_bio: "",
@@ -122,7 +137,7 @@ function CreateCampaign() {
 
       // Navigate to the new campaign page after a short delay
       setTimeout(() => {
-        navigate(`/campaigns/${result.data.campaign_id}`);
+        navigate(`/campaign/${result.data.campaign_id}`);
       }, 2000);
     } catch (err) {
       setError(err.message || "Failed to create campaign");
@@ -146,6 +161,32 @@ function CreateCampaign() {
       {success && <div className="success-message">{success}</div>}
 
       <form className="campaign-form" onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label htmlFor="creator_name">Your full name *</label>
+          <input
+            type="text"
+            name="creator_name"
+            id="creator_name"
+            placeholder="Enter your full name"
+            value={formData.creator_name}
+            onChange={handleChange}
+            required
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="creator_email">Your email *</label>
+          <input
+            type="email"
+            name="creator_email"
+            id="creator_email"
+            placeholder="name@example.com"
+            value={formData.creator_email}
+            onChange={handleChange}
+            required
+          />
+        </div>
+
         <div className="form-group">
           <label htmlFor="provider_id">Chose a owner *</label>
           {isLoading ? (
