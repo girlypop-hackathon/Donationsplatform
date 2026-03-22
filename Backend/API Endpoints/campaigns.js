@@ -83,6 +83,63 @@ router.get("/api/users/:id/campaigns", async (request, response) => {
   }
 });
 
+// GET campaign analytics for a specific user
+router.get("/api/users/:id/campaigns/analytics", async (request, response) => {
+  try {
+    const userId = Number(request.params.id);
+
+    if (!Number.isFinite(userId) || userId <= 0) {
+      response.status(400).json({ error: "Valid user id is required" });
+      return;
+    }
+
+    const summary = await getSingleRow(
+      `SELECT
+         COUNT(DISTINCT campaigns.campaign_id) AS campaigns_count,
+         COUNT(donations.donation_id) AS donations_count,
+         COALESCE(SUM(donations.amount), 0) AS total_raised,
+         COALESCE(AVG(donations.amount), 0) AS average_donation
+       FROM campaigns
+       LEFT JOIN donations ON donations.campaign_id = campaigns.campaign_id
+       WHERE campaigns.created_by_user_id = ?`,
+      [userId],
+    );
+
+    const recentDonations = await getManyRows(
+      `SELECT
+         donations.donation_id,
+         donations.amount,
+         donations.user_name,
+         donations.email,
+         donations.created_at,
+         campaigns.campaign_id,
+         campaigns.campaign_bio,
+         campaigns.image
+       FROM donations
+       JOIN campaigns ON campaigns.campaign_id = donations.campaign_id
+       WHERE campaigns.created_by_user_id = ?
+       ORDER BY donations.created_at DESC, donations.donation_id DESC
+       LIMIT 8`,
+      [userId],
+    );
+
+    response.json({
+      success: true,
+      data: {
+        summary: {
+          campaignsCount: Number(summary?.campaigns_count || 0),
+          donationsCount: Number(summary?.donations_count || 0),
+          totalRaised: Number(summary?.total_raised || 0),
+          averageDonation: Number(summary?.average_donation || 0),
+        },
+        recentDonations,
+      },
+    });
+  } catch (error) {
+    response.status(500).json({ error: error.message });
+  }
+});
+
 // GET campaign by ID
 router.get("/api/campaigns/:id", async (request, response) => {
   try {

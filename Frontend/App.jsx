@@ -14,6 +14,7 @@ import SignIn from "./pages/SignIn";
 import ActivateAccount from "./pages/ActivateAccount";
 import Search from "./pages/Search";
 import Dashboard from "./pages/Dashboard";
+import Profile from "./pages/Profile";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 const API_PREFIX = API_BASE_URL ? `${API_BASE_URL}/api` : "/api";
@@ -139,6 +140,14 @@ function App() {
             element={
               <ProtectedRoute isAuthenticated={isAuthenticated}>
                 <Dashboard authUser={authUser} />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute isAuthenticated={isAuthenticated}>
+                <Profile authUser={authUser} />
               </ProtectedRoute>
             }
           />

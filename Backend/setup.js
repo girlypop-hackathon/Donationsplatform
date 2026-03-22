@@ -48,6 +48,7 @@ db.serialize(() => {
     is_subscription BOOLEAN,
     amount REAL,
     general_newsletter BOOLEAN,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (campaign_id) REFERENCES campaigns (campaign_id)
   )`);
 

@@ -46,9 +46,11 @@ const db = new sqlite3.Database(databasePath, (err) => {
     console.log("Connected to the donations database.");
     ensureProviderIdColumn(() => {
       ensureAmountRaisedColumn(() => {
-        ensureUsersTable(() => {
-          ensureUserLinkColumns(() => {
-            ensureActivationTokensTable();
+        ensureDonationCreatedAtColumn(() => {
+          ensureUsersTable(() => {
+            ensureUserLinkColumns(() => {
+              ensureActivationTokensTable();
+            });
           });
         });
       });
@@ -194,6 +196,53 @@ function ensureAmountRaisedColumn(onDone) {
             console.log(
               "Campaign amount_raised column was added and backfilled.",
             );
+            if (onDone) onDone();
+          },
+        );
+      },
+    );
+  });
+}
+
+function ensureDonationCreatedAtColumn(onDone) {
+  db.all("PRAGMA table_info(donations)", [], (err, columns) => {
+    if (err) {
+      console.error("Could not inspect donations table:", err.message);
+      if (onDone) onDone();
+      return;
+    }
+
+    if (columns.length === 0) {
+      if (onDone) onDone();
+      return;
+    }
+
+    const hasCreatedAt = columns.some((column) => column.name === "created_at");
+    if (hasCreatedAt) {
+      if (onDone) onDone();
+      return;
+    }
+
+    db.run(
+      "ALTER TABLE donations ADD COLUMN created_at TEXT DEFAULT CURRENT_TIMESTAMP",
+      (alterErr) => {
+        if (alterErr) {
+          console.error("Could not add donations.created_at column:", alterErr.message);
+          if (onDone) onDone();
+          return;
+        }
+
+        db.run(
+          `UPDATE donations
+           SET created_at = CURRENT_TIMESTAMP
+           WHERE created_at IS NULL OR TRIM(created_at) = ''`,
+          (updateErr) => {
+            if (updateErr) {
+              console.error(
+                "Could not backfill donations.created_at values:",
+                updateErr.message,
+              );
+            }
             if (onDone) onDone();
           },
         );
