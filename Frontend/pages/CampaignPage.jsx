@@ -1,144 +1,159 @@
-import React, { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import ProgressBar from '../components/ProgressBar'
+import React, { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import ProgressBar from "../components/ProgressBar";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
-const API_PREFIX = API_BASE_URL ? `${API_BASE_URL}/api` : '/api'
-const PRESET_AMOUNTS = [50, 100, 250, 500]
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
+const API_PREFIX = API_BASE_URL ? `${API_BASE_URL}/api` : "/api";
+const PRESET_AMOUNTS = [50, 100, 250, 500];
 
-function CampaignPage () {
-  const { id } = useParams()
-  const navigate = useNavigate()
-  const [campaign, setCampaign] = useState(null)
-  const [donations, setDonations] = useState([])
-  const [selectedPreset, setSelectedPreset] = useState(null)
-  const [customAmount, setCustomAmount] = useState('')
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState('')
+function CampaignPage() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [campaign, setCampaign] = useState(null);
+  const [donations, setDonations] = useState([]);
+  const [selectedPreset, setSelectedPreset] = useState(null);
+  const [customAmount, setCustomAmount] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    const controller = new AbortController()
+    const controller = new AbortController();
 
-    async function fetchCampaignDetails () {
+    async function fetchCampaignDetails() {
       try {
-        setIsLoading(true)
-        setError('')
+        setIsLoading(true);
+        setError("");
 
         const [campaignResponse, donationsResponse] = await Promise.all([
           fetch(`${API_PREFIX}/campaigns/${id}`, {
-            signal: controller.signal
+            signal: controller.signal,
           }),
           fetch(`${API_PREFIX}/campaigns/${id}/donations`, {
-            signal: controller.signal
-          })
-        ])
+            signal: controller.signal,
+          }),
+        ]);
 
         if (!campaignResponse.ok) {
-          throw new Error('Could not fetch campaign')
+          throw new Error("Could not fetch campaign");
         }
 
         if (!donationsResponse.ok) {
-          throw new Error('Could not fetch donations')
+          throw new Error("Could not fetch donations");
         }
 
-        const campaignResult = await campaignResponse.json()
-        const donationsResult = await donationsResponse.json()
+        const campaignResult = await campaignResponse.json();
+        const donationsResult = await donationsResponse.json();
 
-        setCampaign(campaignResult.data || null)
-        setDonations(donationsResult.data || [])
+        setCampaign(campaignResult.data || null);
+        setDonations(donationsResult.data || []);
       } catch (err) {
-        if (err.name !== 'AbortError') {
-          setError('Failed to load campaign from the database.')
+        if (err.name !== "AbortError") {
+          setError("Failed to load campaign from the database.");
         }
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
     }
 
-    fetchCampaignDetails()
+    fetchCampaignDetails();
 
     return () => {
-      controller.abort()
-    }
-  }, [id])
+      controller.abort();
+    };
+  }, [id]);
 
-  const donationsSum = donations.reduce((sum, donation) => sum + (Number(donation.amount) || 0), 0)
-  const parsedAmountRaised = Number(campaign?.amount_raised)
-  const raisedAmount = Number.isFinite(parsedAmountRaised) ? parsedAmountRaised : donationsSum
+  const donationsSum = donations.reduce(
+    (sum, donation) => sum + (Number(donation.amount) || 0),
+    0,
+  );
+  const parsedAmountRaised = Number(campaign?.amount_raised);
+  const raisedAmount = Number.isFinite(parsedAmountRaised)
+    ? parsedAmountRaised
+    : donationsSum;
 
-  const selectedAmount = Number(customAmount)
-  const hasValidAmount = customAmount !== '' && Number.isFinite(selectedAmount) && selectedAmount > 0
+  const selectedAmount = Number(customAmount);
+  const hasValidAmount =
+    customAmount !== "" &&
+    Number.isFinite(selectedAmount) &&
+    selectedAmount > 0;
 
-  function handlePresetClick (amount) {
-    setSelectedPreset(amount)
-    setCustomAmount(String(amount))
+  function handlePresetClick(amount) {
+    setSelectedPreset(amount);
+    setCustomAmount(String(amount));
   }
 
-  function handleAmountChange (event) {
-    const nextValue = event.target.value
-    setCustomAmount(nextValue)
+  function handleAmountChange(event) {
+    const nextValue = event.target.value;
+    setCustomAmount(nextValue);
 
-    const parsedValue = Number(nextValue)
+    const parsedValue = Number(nextValue);
     if (PRESET_AMOUNTS.includes(parsedValue)) {
-      setSelectedPreset(parsedValue)
-      return
+      setSelectedPreset(parsedValue);
+      return;
     }
 
-    setSelectedPreset(null)
+    setSelectedPreset(null);
   }
 
-  function handleDonate () {
-    if (!hasValidAmount) return
+  function handleDonate() {
+    if (!hasValidAmount) return;
 
     navigate(`/campaign/${id}/payment?amount=${selectedAmount}`, {
       state: {
-        amount: selectedAmount
-      }
-    })
+        amount: selectedAmount,
+      },
+    });
   }
 
   if (isLoading) {
-    return <p>Loading campaign...</p>
+    return <p>Loading campaign...</p>;
   }
 
   if (error) {
-    return <p>{error}</p>
+    return <p>{error}</p>;
   }
 
   if (!campaign) {
-    return <p>Campaign not found.</p>
+    return <p>Campaign not found.</p>;
   }
 
-  const goalAmount = Number(campaign.goal_amount) || 0
+  const goalAmount = Number(campaign.goal_amount) || 0;
 
   return (
-    <div className='campaign-page'>
+    <div className="campaign-page">
       <img
-        src={campaign.image || 'https://placehold.co/800x400?text=Campaign'}
-        alt={campaign.campaign_bio || 'campaign'}
+        src={
+          campaign.image
+            ? campaign.image
+            : "https://placehold.co/800x400?text=Campaign"
+        }
+        alt={campaign.campaign_bio || "campaign"}
         onError={(event) => {
-          event.currentTarget.src = 'https://placehold.co/800x400?text=Campaign'
+          event.currentTarget.src =
+            "https://placehold.co/800x400?text=Campaign";
         }}
       />
+      <h1>{`${campaign.campaign_bio}`}</h1>
+      {campaign.provider_name && (
+        <p className="provider-info">Organized by: {campaign.provider_name}</p>
+      )}
 
-      <h1>{`Campaign #${campaign.campaign_id}`}</h1>
-
-      <p>{campaign.body_text || campaign.campaign_bio || 'No description available yet.'}</p>
+      <p>{campaign.body_text || "No description available yet."}</p>
 
       <ProgressBar value={raisedAmount} max={goalAmount} />
-      <p>{`Raised: ${raisedAmount} / Goal: ${goalAmount}`}</p>
+      <h3>{`Raised: ${raisedAmount} / Goal: ${goalAmount} DKK`}</h3>
 
-      <div className='donation-box'>
+      <div className="donation-box">
         <h3>Donate</h3>
 
-        <div className='preset-donations'>
+        <div className="preset-donations">
           {PRESET_AMOUNTS.map((amount) => (
             <button
               key={amount}
-              type='button'
-              className={`preset-btn ${selectedPreset === amount ? 'active' : ''}`}
+              type="button"
+              className={`preset-btn ${selectedPreset === amount ? "active" : ""}`}
               onClick={() => {
-                handlePresetClick(amount)
+                handlePresetClick(amount);
               }}
             >
               {`${amount} DKK`}
@@ -147,21 +162,23 @@ function CampaignPage () {
         </div>
 
         <input
-          type='number'
-          placeholder='Or enter your own amount'
-          min='1'
+          type="number"
+          placeholder="Or enter your own amount"
+          min="1"
           value={customAmount}
           onChange={handleAmountChange}
         />
 
-        {hasValidAmount && <p className='selected-donation'>{`Selected donation: ${selectedAmount} DKK`}</p>}
+        {hasValidAmount && (
+          <p className="selected-donation">{`Selected donation: ${selectedAmount} DKK`}</p>
+        )}
 
-        <button type='button' disabled={!hasValidAmount} onClick={handleDonate}>
+        <button type="button" disabled={!hasValidAmount} onClick={handleDonate}>
           Continue to payment
         </button>
       </div>
     </div>
-  )
+  );
 }
 
-export default CampaignPage
+export default CampaignPage;

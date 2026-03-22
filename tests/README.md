@@ -3,6 +3,7 @@
 ## Testing Philosophy
 
 This project follows Test-Driven Development (TDD) principles:
+
 1. **Red**: Write a failing test first
 2. **Green**: Write minimal code to make the test pass
 3. **Refactor**: Improve the code while keeping tests green
@@ -23,6 +24,7 @@ tests/
 ## Running Tests
 
 ### Backend Tests
+
 ```bash
 # Run all backend tests
 cd Backend
@@ -33,6 +35,7 @@ npm test tests/backend/integration/campaigns.test.js
 ```
 
 ### Frontend Tests
+
 ```bash
 # Run all frontend tests
 cd Frontend
@@ -59,39 +62,41 @@ npm test -- --coverage
 ## Mocking Strategies
 
 ### API Mocking
+
 Use `msw` (Mock Service Worker) for API mocking in frontend tests:
 
 ```javascript
 // tests/shared/mocks/handlers.js
-import { rest } from 'msw';
+import { rest } from "msw";
 
 export const handlers = [
-  rest.post('/api/campaigns', (req, res, ctx) => {
+  rest.post("/api/campaigns", (req, res, ctx) => {
     return res(
       ctx.status(201),
       ctx.json({
         success: true,
         data: {
           campaign_id: 1,
-          ...req.body
-        }
-      })
+          ...req.body,
+        },
+      }),
     );
   }),
 ];
 ```
 
 ### Database Mocking
+
 Use `sqlite3` in-memory database for backend tests:
 
 ```javascript
 // tests/shared/testDatabase.js
-const sqlite3 = require('sqlite3').verbose();
+const sqlite3 = require("sqlite3").verbose();
 
 function createTestDatabase() {
-  return new sqlite3.Database(':memory:', (err) => {
+  return new sqlite3.Database(":memory:", (err) => {
     if (err) throw err;
-    console.log('Test database connected');
+    console.log("Test database connected");
   });
 }
 
@@ -111,23 +116,23 @@ on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - uses: actions/checkout@v2
-    
-    - name: Set up Node.js
-      uses: actions/setup-node@v2
-      with:
-        node-version: '20'
-    
-    - name: Install dependencies
-      run: npm install
-    
-    - name: Run backend tests
-      run: cd Backend && npm test
-    
-    - name: Run frontend tests
-      run: cd Frontend && npm test
+      - uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run backend tests
+        run: cd Backend && npm test
+
+      - name: Run frontend tests
+        run: cd Frontend && npm test
 ```
 
 ## Best Practices
