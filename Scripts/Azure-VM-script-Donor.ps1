@@ -53,14 +53,10 @@ az network public-ip create `
 
 Write-Host "Tjekker om VM findes..."
 
-$vmExists = az vm show `
-    --resource-group $resourceGroupName `
-    --name $vmName `
-    --query "name" `
-    -o tsv 2>$null
+$vmList = az vm list --resource-group $resourceGroupName --query "[?name=='$vmName'].name" -o tsv
 
-if ($vmExists) {
-    Write-Host "VM findes - Sletter..."
+if ($vmList) {
+    Write-Host "VM findes allerede. Sletter den..."
 
     az vm delete `
         --resource-group $resourceGroupName `
