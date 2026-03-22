@@ -86,8 +86,8 @@ az vm create `
     --size Standard_B2ats_v2 `
     --admin-username $adminUsername `
     --ssh-key-values $sshPublicKeyPath `
-    --public-ip-sku Standard
-    --public-ip-address "$vmName-ip"
+    --public-ip-sku Standard `
+    --public-ip-address "${vmName}-ip"
 
 Write-Host "VM oprettet!"
 
@@ -123,7 +123,7 @@ Write-Host "=============================="
 
 Write-Host "Uploader setup script..."
 
-scp ./setup.sh $adminUsername@$publicIp:/home/$adminUsername/
+scp ./setup.sh "$adminUsername@${publicIp}:/home/$adminUsername/"
 
 Write-Host "Kører setup script..."
 
