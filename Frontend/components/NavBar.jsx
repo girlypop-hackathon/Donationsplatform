@@ -1,3 +1,12 @@
+/*
+Oprettet: 18-03-2026
+Af: Føen
+Beskrivelse: Navigationsbar med links og logo til donationsplatformen
+*/
+
+import React from 'react'
+import { Link } from 'react-router-dom'
+import { resolveLogoImageSource } from '../utils/imagePaths'
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 

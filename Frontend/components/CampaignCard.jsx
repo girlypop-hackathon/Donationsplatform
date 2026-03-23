@@ -1,13 +1,17 @@
 /*
 Oprettet: 17-03-2026
-Af: ??
+Af: Linea og Mistral Vibe
+Beskrivelse: Kortvisning af kampagne med billede, status og link
 Beskrivelse: CampaignCard componenter. Displays campaign image, bio, progress bar, and a link to view the campaign details.
 Uses a fallback image if no image is provided or if the image fails to load.
 */
 
-import React from "react";
-import { Link } from "react-router-dom";
-import ProgressBar from "./ProgressBar";
+import React from 'react'
+import { Link } from 'react-router-dom'
+import ProgressBar from './ProgressBar'
+import { resolveCampaignImageSource } from '../utils/imagePaths'
+
+const FALLBACK_IMAGE = resolveCampaignImageSource('animal-rescue.jpg')
 
 // Billede der vises hvis der ikke er billede i databasen ELLER hvis vi ikke henter korrekt
 const FALLBACK_IMAGE = "https://placehold.co/600x400?text=Campaign";

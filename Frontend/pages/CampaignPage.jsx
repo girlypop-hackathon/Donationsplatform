@@ -1,3 +1,9 @@
+/*
+Oprettet: 18-03-2026
+Af: Linea og Mistral Vibe
+Beskrivelse: Kampagneside med donationstrin og billedvisning
+*/
+
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import ProgressBar from "../components/ProgressBar";
