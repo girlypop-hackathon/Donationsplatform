@@ -80,7 +80,14 @@ function SignIn({ isAuthenticated, onLogin, isCheckingSession }) {
         throw new Error(result?.error || "Could not request activation link");
       }
 
-      setInfoMessage(result?.data?.message || "Activation email sent.");
+      if (result?.data?.alreadyActive) {
+        setInfoMessage(
+          result?.data?.message ||
+            "This account is already active. Please sign in with your password.",
+        );
+      } else {
+        setInfoMessage(result?.data?.message || "Activation email sent.");
+      }
       setDevActivationLink(result?.data?.devActivationLink || "");
     } catch (error) {
       setErrorMessage(error.message || "Could not request activation link.");
