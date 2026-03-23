@@ -7,10 +7,20 @@ Beskrivelse: Kampagneside med donationstrin og billedvisning
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import ProgressBar from "../components/ProgressBar";
+import {
+  applyImageFallbackOnce,
+  createImagePlaceholderDataUri,
+  resolveCampaignImageSource,
+} from "../utils/imagePaths";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 const API_PREFIX = API_BASE_URL ? `${API_BASE_URL}/api` : "/api";
 const PRESET_AMOUNTS = [50, 100, 250, 500];
+const FALLBACK_IMAGE_URL = resolveCampaignImageSource(
+  "",
+  "fundtogether-logo.png",
+);
+const BACKUP_FALLBACK_IMAGE_URL = createImagePlaceholderDataUri("Campaign");
 
 function CampaignPage() {
   const { id } = useParams();
@@ -128,15 +138,14 @@ function CampaignPage() {
   return (
     <div className="campaign-page">
       <img
-        src={
-          campaign.image
-            ? campaign.image
-            : "https://placehold.co/800x400?text=Campaign"
-        }
+        src={resolveCampaignImageSource(campaign.image, "fundtogether-logo.png")}
         alt={campaign.campaign_bio || "campaign"}
         onError={(event) => {
-          event.currentTarget.src =
-            "https://placehold.co/800x400?text=Campaign";
+          applyImageFallbackOnce(
+            event,
+            FALLBACK_IMAGE_URL,
+            BACKUP_FALLBACK_IMAGE_URL,
+          )
         }}
       />
       <h1>{`${campaign.campaign_bio}`}</h1>

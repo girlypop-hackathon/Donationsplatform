@@ -224,7 +224,7 @@ function ensureDonationCreatedAtColumn(onDone) {
     }
 
     db.run(
-      "ALTER TABLE donations ADD COLUMN created_at TEXT DEFAULT CURRENT_TIMESTAMP",
+      "ALTER TABLE donations ADD COLUMN created_at TEXT",
       (alterErr) => {
         if (alterErr) {
           console.error("Could not add donations.created_at column:", alterErr.message);
@@ -243,7 +243,27 @@ function ensureDonationCreatedAtColumn(onDone) {
                 updateErr.message,
               );
             }
-            if (onDone) onDone();
+            db.run(
+              `CREATE TRIGGER IF NOT EXISTS donations_set_created_at
+               AFTER INSERT ON donations
+               FOR EACH ROW
+               WHEN NEW.created_at IS NULL OR TRIM(NEW.created_at) = ''
+               BEGIN
+                 UPDATE donations
+                 SET created_at = CURRENT_TIMESTAMP
+                 WHERE donation_id = NEW.donation_id;
+               END;`,
+              (triggerErr) => {
+                if (triggerErr) {
+                  console.error(
+                    "Could not ensure donations_set_created_at trigger:",
+                    triggerErr.message,
+                  );
+                }
+
+                if (onDone) onDone();
+              },
+            );
           },
         );
       },
