@@ -581,13 +581,6 @@ async function findOrCreateUserForEmail({ email, name }) {
 }
 
 async function issueActivationTokenForUser(userId) {
-  await runQuery(
-    `UPDATE user_activation_tokens
-     SET used_at = CURRENT_TIMESTAMP
-     WHERE user_id = ? AND used_at IS NULL`,
-    [userId],
-  );
-
   const plainToken = crypto.randomBytes(32).toString("hex");
   const tokenHash = hashActivationToken(plainToken);
   const expirationDate = new Date(
@@ -795,16 +788,21 @@ app.post("/api/auth/request-activation", async (request, response) => {
     }
 
     let activationInfo = null;
+    let alreadyActive = false;
     if (!userRow.password_hash) {
       activationInfo = await sendActivationEmailForUser(userRow);
+    } else {
+      alreadyActive = true;
     }
 
     response.status(200).json({
       success: true,
       data: {
-        message:
-          "If an account exists for this email, an activation email has been sent.",
+        message: alreadyActive
+          ? "This account is already active. Please sign in with your password."
+          : "If an account exists for this email, an activation email has been sent.",
         devActivationLink: activationInfo?.activationLink,
+        alreadyActive,
       },
     });
   } catch (error) {
@@ -843,7 +841,6 @@ app.post("/api/auth/activate", async (request, response) => {
        FROM user_activation_tokens
        JOIN users ON users.user_id = user_activation_tokens.user_id
        WHERE user_activation_tokens.token_hash = ?
-         AND user_activation_tokens.used_at IS NULL
        LIMIT 1`,
       [tokenHash],
     );
@@ -851,7 +848,18 @@ app.post("/api/auth/activate", async (request, response) => {
     if (!tokenRow) {
       response.status(400).json({
         success: false,
-        error: "Activation token is invalid or has already been used",
+        error: "Activation token is invalid. Request a new activation link and try again.",
+      });
+      return;
+    }
+
+    if (tokenRow.used_at) {
+      const alreadyActivated = Boolean(tokenRow.password_hash);
+      response.status(400).json({
+        success: false,
+        error: alreadyActivated
+          ? "This account is already activated. Sign in with your email and password."
+          : "Activation token has already been used. Request a new activation link and try again.",
       });
       return;
     }
