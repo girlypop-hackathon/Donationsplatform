@@ -1,3 +1,10 @@
+##
+# /*
+# Oprettet: 18-03-2026
+# Af: Jonas og GitHub Copilot (GPT-5.3-codex)
+# Beskrivelse: Build and deploy workflow for the donation platform
+# */
+##
 name: Build and Deploy
 
 on:
@@ -7,6 +14,9 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - name: Checkout
@@ -29,7 +39,9 @@ jobs:
 
       - name: Deploy to VM
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.VM_USER }}@${{ secrets.VM_IP }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no ${{ secrets.ADMIN_USERNAME }}@${{ secrets.SSH_HOST }} << 'EOF'
+
+          echo "${{ secrets.GHCR_READ_TOKEN }}" | docker login ghcr.io -u girlypop-hackathon --password-stdin
 
           docker pull ghcr.io/girlypop-hackathon/donationsplatform:latest
 

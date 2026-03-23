@@ -18,11 +18,20 @@ $vmName = "donationsplatform-vm"
 $adminUsername = "azureuser"
 $sshPublicKeyPath = "$HOME\.ssh\id_rsa.pub"
 $sshPrivateKeyPath = $sshPublicKeyPath -replace "\.pub$", ""
-
-if (Get-Variable -Name PSNativeCommandUseErrorActionPreference -ErrorAction SilentlyContinue) {
-    # Prevents non-zero native command exit codes from being treated as terminating PowerShell errors.
-    $PSNativeCommandUseErrorActionPreference = $false
-}
+$sshMaxAttempts = 12
+$sshDelaySeconds = 5
+$sshConnectTimeoutSeconds = 5
+$sshCommonOptions = @(
+    "-i", $sshPrivateKeyPath,
+    "-o", "StrictHostKeyChecking=no",
+    "-o", "UserKnownHostsFile=/dev/null",
+    "-o", "LogLevel=ERROR"
+)
+$portsToOpen = @(
+    @{ Port = 22; Priority = 301 },
+    @{ Port = 80; Priority = 302 },
+    @{ Port = 443; Priority = 303 }
+)
 
 if (-not (Test-Path $sshPublicKeyPath)) {
     throw "SSH public key blev ikke fundet: $sshPublicKeyPath"
@@ -42,23 +51,17 @@ function Wait-ForSshAvailability {
         [string]$Username,
 
         [Parameter(Mandatory = $true)]
-        [string]$PrivateKeyPath,
+        [string[]]$SshBaseOptions,
 
-        [int]$MaxAttempts = 30,
-        [int]$DelaySeconds = 10
+        [int]$MaxAttempts = 12,
+        [int]$DelaySeconds = 5,
+        [int]$ConnectTimeoutSeconds = 5
     )
 
     for ($attemptNumber = 1; $attemptNumber -le $MaxAttempts; $attemptNumber++) {
         Write-Host "Tjekker SSH forbindelse (forsøg $attemptNumber/$MaxAttempts)..."
 
-        ssh `
-            -i $PrivateKeyPath `
-            -o BatchMode=yes `
-            -o StrictHostKeyChecking=no `
-            -o UserKnownHostsFile=/dev/null `
-            -o LogLevel=ERROR `
-            -o ConnectTimeout=10 `
-            "$Username@$PublicIp" "echo SSH klar" *> $null
+        & ssh @SshBaseOptions -o BatchMode=yes -o ConnectTimeout=$ConnectTimeoutSeconds "$Username@$PublicIp" "echo SSH klar" *> $null
 
         if ($LASTEXITCODE -eq 0) {
             Write-Host "SSH er klar."
@@ -86,14 +89,15 @@ Write-host "Tjekker resource group..."
 
 $rgExists = az group exists --name $resourceGroupName
 
-if ($rgExists -eq "true") {
-    Write-Host "Resource group findes allerede."
-}
-else {
+if ($rgExists -ne "true") {
     Write-Host "Resource group findes ikke. Opretter den..."
     az group create `
         --name $resourceGroupName `
-        --location $location
+        --location $location `
+        --output none
+}
+else {
+    Write-Host "Resource group findes allerede."
 }
 
 # ==============================
@@ -106,7 +110,8 @@ az network public-ip create `
     --resource-group $resourceGroupName `
     --name "$vmName-ip" `
     --sku Standard `
-    --allocation-method static
+    --allocation-method static `
+    --output none
 
 # ==============================
 # DELETE EXISTING VM
@@ -122,7 +127,8 @@ if ($vmList) {
     az vm delete `
         --resource-group $resourceGroupName `
         --name $vmName `
-        --yes
+        --yes `
+        --output none
 
     Write-Host "VM slettet."
 }
@@ -144,7 +150,8 @@ az vm create `
     --admin-username $adminUsername `
     --ssh-key-values $sshPublicKeyPath `
     --public-ip-sku Standard `
-    --public-ip-address "${vmName}-ip"
+    --public-ip-address "${vmName}-ip" `
+    --output none
 
 Write-Host "VM oprettet!"
 
@@ -154,23 +161,14 @@ Write-Host "VM oprettet!"
 
 Write-Host "Åbner porte..."
 
-az vm open-port `
-    --resource-group $resourceGroupName `
-    --name $vmName `
-    --port 22 `
-    --priority 301
-
-az vm open-port `
-    --resource-group $resourceGroupName `
-    --name $vmName `
-    --port 80 `
-    --priority 302
-
-az vm open-port `
-    --resource-group $resourceGroupName `
-    --name $vmName `
-    --port 443 `
-    --priority 303
+foreach ($portRule in $portsToOpen) {
+    az vm open-port `
+        --resource-group $resourceGroupName `
+        --name $vmName `
+        --port $portRule.Port `
+        --priority $portRule.Priority `
+        --output none
+}
 
 
 # ==============================
@@ -203,17 +201,14 @@ Write-Host "Venter på at VM'en bliver klar til SSH..."
 Wait-ForSshAvailability `
     -PublicIp $publicIp `
     -Username $adminUsername `
-    -PrivateKeyPath $sshPrivateKeyPath
+    -SshBaseOptions $sshCommonOptions `
+    -MaxAttempts $sshMaxAttempts `
+    -DelaySeconds $sshDelaySeconds `
+    -ConnectTimeoutSeconds $sshConnectTimeoutSeconds
 
 # Upload setup script til VM
 Write-Host "Uploader setup script til VM..."
-scp `
-    -i $sshPrivateKeyPath `
-    -o StrictHostKeyChecking=no `
-    -o UserKnownHostsFile=/dev/null `
-    -o LogLevel=ERROR `
-    $localSetupScriptPath `
-    "$adminUsername@${publicIp}:/home/$adminUsername/setup.sh"
+& scp @sshCommonOptions $localSetupScriptPath "$adminUsername@${publicIp}:/home/$adminUsername/setup.sh"
 
 if ($LASTEXITCODE -ne 0) {
     throw "Upload af setup script fejlede med exit code $LASTEXITCODE"
@@ -221,12 +216,7 @@ if ($LASTEXITCODE -ne 0) {
 
 # Kør setup script på VM
 Write-Host "Kører setup script på VM..."
-ssh `
-    -i $sshPrivateKeyPath `
-    -o StrictHostKeyChecking=no `
-    -o UserKnownHostsFile=/dev/null `
-    -o LogLevel=ERROR `
-    "$adminUsername@${publicIp}" "sed -i 's/\r$//' setup.sh ; chmod +x setup.sh ; ./setup.sh"
+& ssh @sshCommonOptions "$adminUsername@${publicIp}" "sed -i 's/\r$//' setup.sh ; chmod +x setup.sh ; ./setup.sh"
 
 if ($LASTEXITCODE -ne 0) {
     throw "Kørsel af setup script fejlede med exit code $LASTEXITCODE"
