@@ -8,148 +8,250 @@ Note: this file needs cleanup regarding to many tests for provider_id - check if
 
 // endpoints.js - Main API entry point for the donation platform
 // Orchestrates modular endpoint files and handles database setup
-const express = require('express')
-const sqlite3 = require('sqlite3').verbose()
-const path = require('path')
-const bcrypt = require('bcryptjs')
-const jwt = require('jsonwebtoken')
-const queries = require('./queries')
-const emailService = require('./emailService')
+const express = require("express");
+const sqlite3 = require("sqlite3").verbose();
+const path = require("path");
+const crypto = require("crypto");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const queries = require("./queries");
+const emailService = require("./emailService");
 
 // Import modular endpoint files
-const providersEndpoints = require('./API Endpoints/providers')
-const campaignsEndpoints = require('./API Endpoints/campaigns')
-const donationsEndpoints = require('./API Endpoints/donations')
-const campaignEventsEndpoints = require('./API Endpoints/campaignEvents')
-const newslettersEndpoints = require('./API Endpoints/newsletters')
+const providersEndpoints = require("./API Endpoints/providers");
+const campaignsEndpoints = require("./API Endpoints/campaigns");
+const donationsEndpoints = require("./API Endpoints/donations");
+const campaignEventsEndpoints = require("./API Endpoints/campaignEvents");
+const newslettersEndpoints = require("./API Endpoints/newsletters");
 
-const app = express()
-const PORT = 3000
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-only-secret-change-me'
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '8h'
-const revokedTokens = new Set()
+const app = express();
+const PORT = 3000;
+const JWT_SECRET = process.env.JWT_SECRET || "dev-only-secret-change-me";
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "8h";
+const FRONTEND_PUBLIC_URL =
+  process.env.FRONTEND_PUBLIC_URL || "http://localhost:5173";
+const ACTIVATION_TOKEN_TTL_HOURS = Number(
+  process.env.ACTIVATION_TOKEN_TTL_HOURS || 24,
+);
+const revokedTokens = new Set();
+
+// Always resolve DB relative to Backend directory so cwd does not change DB target.
+const databasePath = path.join(__dirname, "donations.db");
 
 // Create database connection
-const db = new sqlite3.Database('./donations.db', (err) => {
+const db = new sqlite3.Database(databasePath, (err) => {
   if (err) {
-    console.error('Database connection error:', err.message)
+    console.error("Database connection error:", err.message);
   } else {
-    console.log('Connected to the donations database.')
+    console.log("Connected to the donations database.");
     ensureProviderIdColumn(() => {
       ensureAmountRaisedColumn(() => {
-        ensureUsersTable()
-      })
-    })
+        ensureDonationCreatedAtColumn(() => {
+          ensureUsersTable(() => {
+            ensureUserLinkColumns(() => {
+              ensureActivationTokensTable();
+            });
+          });
+        });
+      });
+    });
   }
-})
+});
 
-function ensureProviderIdColumn (onDone) {
-  db.all('PRAGMA table_info(campaigns)', [], (err, columns) => {
+function ensureProviderIdColumn(onDone) {
+  db.all("PRAGMA table_info(campaigns)", [], (err, columns) => {
     if (err) {
-      console.error('Could not inspect campaigns table for provider_id:', err.message)
-      if (onDone) onDone()
-      return
+      console.error(
+        "Could not inspect campaigns table for provider_id:",
+        err.message,
+      );
+      if (onDone) onDone();
+      return;
     }
 
     if (columns.length === 0) {
-      if (onDone) onDone()
-      return
+      if (onDone) onDone();
+      return;
     }
 
-    const hasProviderId = columns.some((column) => column.name === 'provider_id')
-    const hasOrganizationId = columns.some((column) => column.name === 'organization_id')
+    const hasProviderId = columns.some(
+      (column) => column.name === "provider_id",
+    );
+    const hasOrganizationId = columns.some(
+      (column) => column.name === "organization_id",
+    );
 
     // If we have provider_id, we're good to go
     if (hasProviderId) {
-      console.log('provider_id column already exists.')
-      if (onDone) onDone()
-      return
+      console.log("provider_id column already exists.");
+      if (onDone) onDone();
+      return;
     }
 
     // If we don't have provider_id but have organization_id, migrate
     if (!hasProviderId && hasOrganizationId) {
-      db.run('ALTER TABLE campaigns ADD COLUMN provider_id INTEGER', (alterErr) => {
-        if (alterErr) {
-          console.error('Could not add provider_id column:', alterErr.message)
-          if (onDone) onDone()
-          return
-        }
-
-        db.run('UPDATE campaigns SET provider_id = organization_id', (updateErr) => {
-          if (updateErr) {
-            console.error('Could not copy organization_id to provider_id:', updateErr.message)
-          } else {
-            console.log('Campaign provider_id column was added and backfilled from organization_id.')
+      db.run(
+        "ALTER TABLE campaigns ADD COLUMN provider_id INTEGER",
+        (alterErr) => {
+          if (alterErr) {
+            console.error(
+              "Could not add provider_id column:",
+              alterErr.message,
+            );
+            if (onDone) onDone();
+            return;
           }
-          if (onDone) onDone()
-        })
-      })
-      return
+
+          db.run(
+            "UPDATE campaigns SET provider_id = organization_id",
+            (updateErr) => {
+              if (updateErr) {
+                console.error(
+                  "Could not copy organization_id to provider_id:",
+                  updateErr.message,
+                );
+              } else {
+                console.log(
+                  "Campaign provider_id column was added and backfilled from organization_id.",
+                );
+              }
+              if (onDone) onDone();
+            },
+          );
+        },
+      );
+      return;
     }
 
     // If we have neither, just add provider_id column
     if (!hasProviderId && !hasOrganizationId) {
-      db.run('ALTER TABLE campaigns ADD COLUMN provider_id INTEGER', (alterErr) => {
-        if (alterErr) {
-          console.error('Could not add provider_id column:', alterErr.message)
-        } else {
-          console.log('Added provider_id column to campaigns table.')
-        }
-        if (onDone) onDone()
-      })
+      db.run(
+        "ALTER TABLE campaigns ADD COLUMN provider_id INTEGER",
+        (alterErr) => {
+          if (alterErr) {
+            console.error(
+              "Could not add provider_id column:",
+              alterErr.message,
+            );
+          } else {
+            console.log("Added provider_id column to campaigns table.");
+          }
+          if (onDone) onDone();
+        },
+      );
     }
-  })
+  });
 }
 
-function ensureAmountRaisedColumn (onDone) {
-  db.all('PRAGMA table_info(campaigns)', [], (err, columns) => {
+function ensureAmountRaisedColumn(onDone) {
+  db.all("PRAGMA table_info(campaigns)", [], (err, columns) => {
     if (err) {
-      console.error('Could not inspect campaigns table:', err.message)
-      if (onDone) onDone()
-      return
+      console.error("Could not inspect campaigns table:", err.message);
+      if (onDone) onDone();
+      return;
     }
 
-    const hasAmountRaised = columns.some((column) => column.name === 'amount_raised')
+    const hasAmountRaised = columns.some(
+      (column) => column.name === "amount_raised",
+    );
 
     if (columns.length === 0) {
-      if (onDone) onDone()
-      return
+      if (onDone) onDone();
+      return;
     }
 
     if (hasAmountRaised) {
-      if (onDone) onDone()
-      return
+      if (onDone) onDone();
+      return;
     }
 
-    db.run('ALTER TABLE campaigns ADD COLUMN amount_raised REAL DEFAULT 0', (alterErr) => {
-      if (alterErr) {
-        console.error('Could not add amount_raised column:', alterErr.message)
-        if (onDone) onDone()
-        return
-      }
+    db.run(
+      "ALTER TABLE campaigns ADD COLUMN amount_raised REAL DEFAULT 0",
+      (alterErr) => {
+        if (alterErr) {
+          console.error(
+            "Could not add amount_raised column:",
+            alterErr.message,
+          );
+          if (onDone) onDone();
+          return;
+        }
 
-      db.run(
-        `UPDATE campaigns
+        db.run(
+          `UPDATE campaigns
          SET amount_raised = COALESCE(
            (SELECT SUM(amount) FROM donations WHERE donations.campaign_id = campaigns.campaign_id),
            0
          )`,
-        (updateErr) => {
-          if (updateErr) {
-            console.error('Could not backfill amount_raised values:', updateErr.message)
-            if (onDone) onDone()
-            return
-          }
+          (updateErr) => {
+            if (updateErr) {
+              console.error(
+                "Could not backfill amount_raised values:",
+                updateErr.message,
+              );
+              if (onDone) onDone();
+              return;
+            }
 
-          console.log('Campaign amount_raised column was added and backfilled.')
-          if (onDone) onDone()
-        }
-      )
-    })
-  })
+            console.log(
+              "Campaign amount_raised column was added and backfilled.",
+            );
+            if (onDone) onDone();
+          },
+        );
+      },
+    );
+  });
 }
 
-function ensureUsersTable () {
+function ensureDonationCreatedAtColumn(onDone) {
+  db.all("PRAGMA table_info(donations)", [], (err, columns) => {
+    if (err) {
+      console.error("Could not inspect donations table:", err.message);
+      if (onDone) onDone();
+      return;
+    }
+
+    if (columns.length === 0) {
+      if (onDone) onDone();
+      return;
+    }
+
+    const hasCreatedAt = columns.some((column) => column.name === "created_at");
+    if (hasCreatedAt) {
+      if (onDone) onDone();
+      return;
+    }
+
+    db.run(
+      "ALTER TABLE donations ADD COLUMN created_at TEXT DEFAULT CURRENT_TIMESTAMP",
+      (alterErr) => {
+        if (alterErr) {
+          console.error("Could not add donations.created_at column:", alterErr.message);
+          if (onDone) onDone();
+          return;
+        }
+
+        db.run(
+          `UPDATE donations
+           SET created_at = CURRENT_TIMESTAMP
+           WHERE created_at IS NULL OR TRIM(created_at) = ''`,
+          (updateErr) => {
+            if (updateErr) {
+              console.error(
+                "Could not backfill donations.created_at values:",
+                updateErr.message,
+              );
+            }
+            if (onDone) onDone();
+          },
+        );
+      },
+    );
+  });
+}
+
+function ensureUsersTable(onDone) {
   db.run(
     `CREATE TABLE IF NOT EXISTS users (
       user_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -161,252 +263,729 @@ function ensureUsersTable () {
     )`,
     (error) => {
       if (error) {
-        console.error('Could not ensure users table:', error.message)
-        return
+        console.error("Could not ensure users table:", error.message);
+        if (onDone) onDone();
+        return;
       }
 
-      console.log('Users table is ready.')
-    }
-  )
+      console.log("Users table is ready.");
+      if (onDone) onDone();
+    },
+  );
 }
 
-function getSingleRow (queryText, queryParams = []) {
+function ensureUserLinkColumns(onDone) {
+  db.serialize(() => {
+    db.all(
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('donations', 'campaigns')",
+      [],
+      (tablesError, tableRows) => {
+        if (tablesError) {
+          console.error("Could not inspect tables for user links:", tablesError.message);
+          if (onDone) onDone();
+          return;
+        }
+
+        const tableNames = new Set(tableRows.map((row) => row.name));
+        const hasDonationsTable = tableNames.has("donations");
+        const hasCampaignsTable = tableNames.has("campaigns");
+
+        if (!hasDonationsTable && !hasCampaignsTable) {
+          if (onDone) onDone();
+          return;
+        }
+
+        if (!hasDonationsTable) {
+          finalizeCampaignColumnUpdate(hasCampaignsTable, onDone);
+          return;
+        }
+
+        db.all("PRAGMA table_info(donations)", [], (donationTableError, columns) => {
+      if (donationTableError) {
+        console.error(
+          "Could not inspect donations table for user_id:",
+          donationTableError.message,
+        );
+          } else if (!columns.some((column) => column.name === "user_id")) {
+            db.run(
+              "ALTER TABLE donations ADD COLUMN user_id INTEGER",
+              (alterError) => {
+                if (alterError) {
+                  console.error(
+                    "Could not add user_id to donations:",
+                    alterError.message,
+                  );
+                }
+              },
+            );
+          }
+
+          db.run(
+            `UPDATE donations
+         SET user_id = (
+           SELECT users.user_id
+           FROM users
+           WHERE LOWER(users.email) = LOWER(donations.email)
+           LIMIT 1
+         )
+         WHERE user_id IS NULL
+           AND email IS NOT NULL
+           AND TRIM(email) != ''`,
+            (backfillDonationError) => {
+              if (backfillDonationError) {
+                console.error(
+                  "Could not backfill donations.user_id:",
+                  backfillDonationError.message,
+                );
+              }
+
+              finalizeCampaignColumnUpdate(hasCampaignsTable, onDone);
+            },
+          );
+        });
+      },
+    );
+  });
+}
+
+function finalizeCampaignColumnUpdate(hasCampaignsTable, onDone) {
+  if (!hasCampaignsTable) {
+    if (onDone) onDone();
+    return;
+  }
+
+  db.all("PRAGMA table_info(campaigns)", [], (campaignTableError, campaignColumns) => {
+    if (campaignTableError) {
+      console.error(
+        "Could not inspect campaigns table for created_by_user_id:",
+        campaignTableError.message,
+      );
+      if (onDone) onDone();
+      return;
+    }
+
+    if (!campaignColumns.some((column) => column.name === "created_by_user_id")) {
+      db.run(
+        "ALTER TABLE campaigns ADD COLUMN created_by_user_id INTEGER",
+        (alterCampaignError) => {
+          if (alterCampaignError) {
+            console.error(
+              "Could not add created_by_user_id to campaigns:",
+              alterCampaignError.message,
+            );
+          }
+          if (onDone) onDone();
+        },
+      );
+      return;
+    }
+
+    if (onDone) onDone();
+  });
+}
+
+function ensureActivationTokensTable(onDone) {
+  db.run(
+    `CREATE TABLE IF NOT EXISTS user_activation_tokens (
+      token_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      token_hash TEXT NOT NULL UNIQUE,
+      expires_at TEXT NOT NULL,
+      used_at TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users (user_id)
+    )`,
+    (error) => {
+      if (error) {
+        console.error("Could not ensure user_activation_tokens table:", error.message);
+        if (onDone) onDone();
+        return;
+      }
+
+      db.run(
+        "CREATE INDEX IF NOT EXISTS idx_user_activation_tokens_user_id ON user_activation_tokens (user_id)",
+        (indexError) => {
+          if (indexError) {
+            console.error(
+              "Could not ensure activation token user index:",
+              indexError.message,
+            );
+          }
+          if (onDone) onDone();
+        },
+      );
+    },
+  );
+}
+
+function getSingleRow(queryText, queryParams = []) {
   return new Promise((resolve, reject) => {
     db.get(queryText, queryParams, (error, row) => {
       if (error) {
-        reject(error)
-        return
+        reject(error);
+        return;
       }
 
-      resolve(row)
-    })
-  })
+      resolve(row);
+    });
+  });
 }
 
-function normalizeEmail (rawEmail) {
-  return String(rawEmail || '').trim().toLowerCase()
+function getManyRows(queryText, queryParams = []) {
+  return new Promise((resolve, reject) => {
+    db.all(queryText, queryParams, (error, rows) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+
+      resolve(rows);
+    });
+  });
 }
 
-function isValidEmail (email) {
-  return /^\S+@\S+\.\S+$/.test(email)
+function runQuery(queryText, queryParams = []) {
+  return new Promise((resolve, reject) => {
+    db.run(queryText, queryParams, function onQueryRun(error) {
+      if (error) {
+        reject(error);
+        return;
+      }
+
+      resolve({
+        changes: this.changes,
+        lastId: this.lastID,
+      });
+    });
+  });
 }
 
-function buildPublicUser (userRow) {
+function normalizeEmail(rawEmail) {
+  return String(rawEmail || "")
+    .trim()
+    .toLowerCase();
+}
+
+function isValidEmail(email) {
+  return /^\S+@\S+\.\S+$/.test(email);
+}
+
+function buildPublicUser(userRow) {
   return {
     userId: userRow.user_id,
     name: userRow.name,
     email: userRow.email,
     status: userRow.status,
-    createdAt: userRow.created_at
-  }
+    createdAt: userRow.created_at,
+  };
 }
 
-function extractBearerToken (request) {
-  const authorizationHeader = String(request.headers.authorization || '')
-  const [scheme, token] = authorizationHeader.split(' ')
+function extractBearerToken(request) {
+  const authorizationHeader = String(request.headers.authorization || "");
+  const [scheme, token] = authorizationHeader.split(" ");
 
-  if (scheme !== 'Bearer' || !token) {
-    return null
+  if (scheme !== "Bearer" || !token) {
+    return null;
   }
 
-  return token
+  return token;
 }
 
-function verifyToken (token) {
+function verifyToken(token) {
   try {
-    return jwt.verify(token, JWT_SECRET)
+    return jwt.verify(token, JWT_SECRET);
   } catch (_error) {
-    return null
+    return null;
   }
 }
+
+function hashActivationToken(plainToken) {
+  return crypto.createHash("sha256").update(plainToken).digest("hex");
+}
+
+function createActivationUrl(plainToken) {
+  const normalizedBase = FRONTEND_PUBLIC_URL.replace(/\/$/, "");
+  return `${normalizedBase}/activate?token=${encodeURIComponent(plainToken)}`;
+}
+
+async function findOrCreateUserForEmail({ email, name }) {
+  const normalizedEmail = normalizeEmail(email);
+  const normalizedName = String(name || "").trim();
+
+  if (!isValidEmail(normalizedEmail)) {
+    return {
+      ok: false,
+      error: "A valid email is required for account creation",
+    };
+  }
+
+  let userRow = await getSingleRow("SELECT * FROM users WHERE email = ?", [
+    normalizedEmail,
+  ]);
+
+  if (!userRow) {
+    const insertResult = await runQuery(
+      "INSERT INTO users (name, email, status) VALUES (?, ?, 'pending')",
+      [normalizedName || null, normalizedEmail],
+    );
+
+    userRow = await getSingleRow("SELECT * FROM users WHERE user_id = ?", [
+      insertResult.lastId,
+    ]);
+
+    return {
+      ok: true,
+      user: userRow,
+      created: true,
+      newlyActivatable: true,
+    };
+  }
+
+  if (!userRow.name && normalizedName) {
+    await runQuery("UPDATE users SET name = ? WHERE user_id = ?", [
+      normalizedName,
+      userRow.user_id,
+    ]);
+
+    userRow = await getSingleRow("SELECT * FROM users WHERE user_id = ?", [
+      userRow.user_id,
+    ]);
+  }
+
+  return {
+    ok: true,
+    user: userRow,
+    created: false,
+    newlyActivatable: !userRow.password_hash,
+  };
+}
+
+async function issueActivationTokenForUser(userId) {
+  await runQuery(
+    `UPDATE user_activation_tokens
+     SET used_at = CURRENT_TIMESTAMP
+     WHERE user_id = ? AND used_at IS NULL`,
+    [userId],
+  );
+
+  const plainToken = crypto.randomBytes(32).toString("hex");
+  const tokenHash = hashActivationToken(plainToken);
+  const expirationDate = new Date(
+    Date.now() + ACTIVATION_TOKEN_TTL_HOURS * 60 * 60 * 1000,
+  ).toISOString();
+
+  await runQuery(
+    `INSERT INTO user_activation_tokens (user_id, token_hash, expires_at)
+     VALUES (?, ?, ?)`,
+    [userId, tokenHash, expirationDate],
+  );
+
+  return {
+    plainToken,
+    expiresAt: expirationDate,
+  };
+}
+
+async function sendActivationEmailForUser(userRow) {
+  if (userRow.password_hash) {
+    return {
+      sent: false,
+      skipped: true,
+      reason: "already_active",
+    };
+  }
+
+  const { plainToken, expiresAt } = await issueActivationTokenForUser(
+    userRow.user_id,
+  );
+  const activationLink = createActivationUrl(plainToken);
+
+  if (process.env.NODE_ENV !== "production") {
+    console.log(`[DEV_ACTIVATION_LINK] ${activationLink}`);
+  }
+
+  const activationEmail = emailService.buildAccountActivationEmail({
+    recipientName: userRow.name || "there",
+    activationLink,
+  });
+
+  const mailSendResult = await emailService.sendEmailMessage({
+    recipientEmail: userRow.email,
+    subjectLine: activationEmail.subjectLine,
+    messageText: activationEmail.messageText,
+  });
+
+  return {
+    sent: true,
+    mode: mailSendResult.mode,
+    expiresAt,
+    activationLink:
+      process.env.NODE_ENV !== "production" ? activationLink : undefined,
+  };
+}
+
+const authHelpers = {
+  findOrCreateUserForEmail,
+  sendActivationEmailForUser,
+};
 
 // Middleware
-app.use(express.json())
+app.use(express.json());
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*')
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept')
-  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS')
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept",
+  );
+  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
 
-  if (req.method === 'OPTIONS') {
-    res.sendStatus(200)
-    return
+  if (req.method === "OPTIONS") {
+    res.sendStatus(200);
+    return;
   }
 
-  next()
-})
+  next();
+});
 
 // Basic CORS support so local frontend can call this API during development.
 app.use((request, response, next) => {
-  response.header('Access-Control-Allow-Origin', '*')
-  response.header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
-  response.header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+  response.header("Access-Control-Allow-Origin", "*");
+  response.header("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+  response.header(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization",
+  );
 
-  if (request.method === 'OPTIONS') {
-    response.sendStatus(200)
-    return
+  if (request.method === "OPTIONS") {
+    response.sendStatus(200);
+    return;
   }
 
-  next()
-})
+  next();
+});
 
 // Setup modular routers with database connection
-providersEndpoints.setDatabase(db)
-campaignsEndpoints.setDatabase(db)
-donationsEndpoints.setDatabase(db)
-campaignEventsEndpoints.setDatabase(db)
-newslettersEndpoints.setDatabase(db)
+providersEndpoints.setDatabase(db);
+campaignsEndpoints.setDatabase(db);
+donationsEndpoints.setDatabase(db);
+campaignEventsEndpoints.setDatabase(db);
+newslettersEndpoints.setDatabase(db);
 
-app.post('/api/auth/login', async (request, response) => {
+if (typeof campaignsEndpoints.setAuthHelpers === "function") {
+  campaignsEndpoints.setAuthHelpers(authHelpers);
+}
+
+if (typeof donationsEndpoints.setAuthHelpers === "function") {
+  donationsEndpoints.setAuthHelpers(authHelpers);
+}
+
+app.post("/api/auth/login", async (request, response) => {
   try {
-    const email = normalizeEmail(request.body.email)
-    const password = String(request.body.password || '')
+    const email = normalizeEmail(request.body.email);
+    const password = String(request.body.password || "");
 
     if (!isValidEmail(email) || password.length < 8) {
       response.status(400).json({
         success: false,
-        error: 'email and password are required (password min 8 chars)'
-      })
-      return
+        error: "email and password are required (password min 8 chars)",
+      });
+      return;
     }
 
-    const userRow = await getSingleRow('SELECT * FROM users WHERE email = ?', [email])
+    const userRow = await getSingleRow("SELECT * FROM users WHERE email = ?", [
+      email,
+    ]);
     if (!userRow || !userRow.password_hash) {
       response.status(401).json({
         success: false,
-        error: 'Invalid email or password'
-      })
-      return
+        error: "Invalid email or password",
+      });
+      return;
     }
 
-    const hasValidPassword = await bcrypt.compare(password, userRow.password_hash)
+    const hasValidPassword = await bcrypt.compare(
+      password,
+      userRow.password_hash,
+    );
     if (!hasValidPassword) {
       response.status(401).json({
         success: false,
-        error: 'Invalid email or password'
-      })
-      return
+        error: "Invalid email or password",
+      });
+      return;
     }
 
-    if (String(userRow.status || '').toLowerCase() === 'disabled') {
+    if (String(userRow.status || "").toLowerCase() === "disabled") {
       response.status(403).json({
         success: false,
-        error: 'User account is disabled'
-      })
-      return
+        error: "User account is disabled",
+      });
+      return;
     }
 
     const token = jwt.sign(
       {
         sub: userRow.user_id,
-        email: userRow.email
+        email: userRow.email,
       },
       JWT_SECRET,
-      { expiresIn: JWT_EXPIRES_IN }
-    )
+      { expiresIn: JWT_EXPIRES_IN },
+    );
 
     response.json({
       success: true,
       data: {
         token,
-        user: buildPublicUser(userRow)
-      }
-    })
+        user: buildPublicUser(userRow),
+      },
+    });
   } catch (error) {
     response.status(500).json({
       success: false,
-      error: error.message
-    })
+      error: error.message,
+    });
   }
-})
+});
 
-app.get('/api/auth/me', async (request, response) => {
+app.post("/api/auth/request-activation", async (request, response) => {
   try {
-    const token = extractBearerToken(request)
+    const email = normalizeEmail(request.body.email);
+
+    if (!isValidEmail(email)) {
+      response.status(400).json({
+        success: false,
+        error: "A valid email is required",
+      });
+      return;
+    }
+
+    const userRow = await getSingleRow("SELECT * FROM users WHERE email = ?", [
+      email,
+    ]);
+
+    if (!userRow) {
+      response.status(200).json({
+        success: true,
+        data: {
+          message:
+            "If an account exists for this email, an activation email has been sent.",
+        },
+      });
+      return;
+    }
+
+    let activationInfo = null;
+    if (!userRow.password_hash) {
+      activationInfo = await sendActivationEmailForUser(userRow);
+    }
+
+    response.status(200).json({
+      success: true,
+      data: {
+        message:
+          "If an account exists for this email, an activation email has been sent.",
+        devActivationLink: activationInfo?.activationLink,
+      },
+    });
+  } catch (error) {
+    response.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+app.post("/api/auth/activate", async (request, response) => {
+  try {
+    const plainToken = String(request.body.token || "").trim();
+    const password = String(request.body.password || "");
+    const displayName = String(request.body.name || "").trim();
+
+    if (!plainToken || plainToken.length < 32) {
+      response.status(400).json({
+        success: false,
+        error: "A valid activation token is required",
+      });
+      return;
+    }
+
+    if (password.length < 8) {
+      response.status(400).json({
+        success: false,
+        error: "Password must be at least 8 characters",
+      });
+      return;
+    }
+
+    const tokenHash = hashActivationToken(plainToken);
+    const tokenRow = await getSingleRow(
+      `SELECT user_activation_tokens.*, users.*
+       FROM user_activation_tokens
+       JOIN users ON users.user_id = user_activation_tokens.user_id
+       WHERE user_activation_tokens.token_hash = ?
+         AND user_activation_tokens.used_at IS NULL
+       LIMIT 1`,
+      [tokenHash],
+    );
+
+    if (!tokenRow) {
+      response.status(400).json({
+        success: false,
+        error: "Activation token is invalid or has already been used",
+      });
+      return;
+    }
+
+    if (new Date(tokenRow.expires_at).getTime() < Date.now()) {
+      response.status(400).json({
+        success: false,
+        error: "Activation token has expired",
+      });
+      return;
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    await runQuery(
+      `UPDATE users
+       SET password_hash = ?,
+           status = 'active',
+           name = COALESCE(NULLIF(?, ''), name)
+       WHERE user_id = ?`,
+      [passwordHash, displayName, tokenRow.user_id],
+    );
+
+    await runQuery(
+      "UPDATE user_activation_tokens SET used_at = CURRENT_TIMESTAMP WHERE token_hash = ?",
+      [tokenHash],
+    );
+
+    await runQuery(
+      `UPDATE user_activation_tokens
+       SET used_at = CURRENT_TIMESTAMP
+       WHERE user_id = ? AND used_at IS NULL`,
+      [tokenRow.user_id],
+    );
+
+    const userRow = await getSingleRow("SELECT * FROM users WHERE user_id = ?", [
+      tokenRow.user_id,
+    ]);
+
+    const jwtToken = jwt.sign(
+      {
+        sub: userRow.user_id,
+        email: userRow.email,
+      },
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRES_IN },
+    );
+
+    response.status(200).json({
+      success: true,
+      data: {
+        token: jwtToken,
+        user: buildPublicUser(userRow),
+      },
+    });
+  } catch (error) {
+    response.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+app.get("/api/auth/me", async (request, response) => {
+  try {
+    const token = extractBearerToken(request);
     if (!token) {
       response.status(401).json({
         success: false,
-        error: 'Authorization token is required'
-      })
-      return
+        error: "Authorization token is required",
+      });
+      return;
     }
 
     if (revokedTokens.has(token)) {
       response.status(401).json({
         success: false,
-        error: 'Token has been logged out'
-      })
-      return
+        error: "Token has been logged out",
+      });
+      return;
     }
 
-    const tokenPayload = verifyToken(token)
+    const tokenPayload = verifyToken(token);
     if (!tokenPayload || !tokenPayload.sub) {
       response.status(401).json({
         success: false,
-        error: 'Invalid or expired token'
-      })
-      return
+        error: "Invalid or expired token",
+      });
+      return;
     }
 
-    const userRow = await getSingleRow('SELECT * FROM users WHERE user_id = ?', [tokenPayload.sub])
+    const userRow = await getSingleRow(
+      "SELECT * FROM users WHERE user_id = ?",
+      [tokenPayload.sub],
+    );
     if (!userRow) {
       response.status(401).json({
         success: false,
-        error: 'User not found'
-      })
-      return
+        error: "User not found",
+      });
+      return;
     }
 
     response.json({
       success: true,
       data: {
-        user: buildPublicUser(userRow)
-      }
-    })
+        user: buildPublicUser(userRow),
+      },
+    });
   } catch (error) {
     response.status(500).json({
       success: false,
-      error: error.message
-    })
+      error: error.message,
+    });
   }
-})
+});
 
-app.post('/api/auth/logout', (request, response) => {
-  const token = extractBearerToken(request)
+app.post("/api/auth/logout", (request, response) => {
+  const token = extractBearerToken(request);
 
   if (token) {
-    revokedTokens.add(token)
+    revokedTokens.add(token);
   }
 
   response.json({
     success: true,
     data: {
-      message: 'Logged out successfully'
-    }
-  })
-})
+      message: "Logged out successfully",
+    },
+  });
+});
 
 // Use the modular routers
-app.use(providersEndpoints.router)
-app.use(campaignsEndpoints.router)
-app.use(donationsEndpoints.router)
-app.use(campaignEventsEndpoints.router)
-app.use(newslettersEndpoints.router)
+app.use(providersEndpoints.router);
+app.use(campaignsEndpoints.router);
+app.use(donationsEndpoints.router);
+app.use(campaignEventsEndpoints.router);
+app.use(newslettersEndpoints.router);
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`)
-})
+  console.log(`Server is running on http://localhost:${PORT}`);
+});
 
 // Handle graceful shutdown
-process.on('SIGINT', () => {
+process.on("SIGINT", () => {
   db.close((err) => {
     if (err) {
-      console.error('Error closing database:', err.message)
+      console.error("Error closing database:", err.message);
     } else {
-      console.log('Database connection closed.')
+      console.log("Database connection closed.");
     }
-    process.exit()
-  })
-})
+    process.exit();
+  });
+});
 
-module.exports = app
+module.exports = app;
