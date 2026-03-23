@@ -104,13 +104,13 @@ az vm open-port `
     --resource-group $resourceGroupName `
     --name $vmName `
     --port 80 `
-    --priority 301
+    --priority 302
 
 az vm open-port `
     --resource-group $resourceGroupName `
     --name $vmName `
     --port 443 `
-    --priority 301
+    --priority 303
 
 
 # ==============================
@@ -129,20 +129,24 @@ Write-Host "VM Public IP: $publicIp"
 Write-Host "=============================="
 
 # ==============================
-# COPY + RUN SETUP SCRIPT
+# COPY + RUN SETUP SCRIPT (FIX)
 # ==============================
 
-Write-Host "Uploader setup script..."
+# Definer stien til dit lokale setup script
+$scriptPath = "./setup.sh"
 
-scp ./setup.sh "$adminUsername@${publicIp}:/home/$adminUsername/"
+# Vent et par sekunder, så VM’en er helt klar
+Write-Host "Venter på at VM'en bliver klar til SSH..."
+Start-Sleep -Seconds 15
 
-Write-Host "Kører setup script..."
+# Upload setup script til VM
+Write-Host "Uploader setup script til VM..."
+scp -o StrictHostKeyChecking=no $scriptPath "$adminUsername@${publicIp}:/home/$adminUsername/setup.sh"
 
-ssh $adminUsername@$publicIp "
-chmod +x setup.sh
-./setup.sh
-"
+# Kør setup script på VM
+Write-Host "Kører setup script på VM..."
+ssh -o StrictHostKeyChecking=no "$adminUsername@${publicIp}" "chmod +x setup.sh && ./setup.sh"
 
-Write-Host "VM er klar!"
+Write-Host "Setup script er fuldført, VM er klar!"
 
 
