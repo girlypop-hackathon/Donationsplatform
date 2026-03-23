@@ -194,7 +194,12 @@ function CampaignPage() {
           <p className="selected-donation">{`Selected donation: ${selectedAmount} DKK`}</p>
         )}
 
-        <button type="button" disabled={!hasValidAmount} onClick={handleDonate}>
+        <button 
+        type="button" 
+        disabled={!hasValidAmount}
+        onClick={handleDonate}
+        id="continue-to-payment-btn"
+        >
           Continue to payment
         </button>
       </div>
