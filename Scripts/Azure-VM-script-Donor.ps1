@@ -19,6 +19,11 @@ $adminUsername = "azureuser"
 $sshPublicKeyPath = "$HOME\.ssh\id_rsa.pub"
 $sshPrivateKeyPath = $sshPublicKeyPath -replace "\.pub$", ""
 
+if (Get-Variable -Name PSNativeCommandUseErrorActionPreference -ErrorAction SilentlyContinue) {
+    # Prevents non-zero native command exit codes from being treated as terminating PowerShell errors.
+    $PSNativeCommandUseErrorActionPreference = $false
+}
+
 if (-not (Test-Path $sshPublicKeyPath)) {
     throw "SSH public key blev ikke fundet: $sshPublicKeyPath"
 }
@@ -50,8 +55,10 @@ function Wait-ForSshAvailability {
             -i $PrivateKeyPath `
             -o BatchMode=yes `
             -o StrictHostKeyChecking=no `
+            -o UserKnownHostsFile=/dev/null `
+            -o LogLevel=ERROR `
             -o ConnectTimeout=10 `
-            "$Username@$PublicIp" "echo SSH klar" 2>$null | Out-Null
+            "$Username@$PublicIp" "echo SSH klar" *> $null
 
         if ($LASTEXITCODE -eq 0) {
             Write-Host "SSH er klar."
@@ -203,15 +210,27 @@ Write-Host "Uploader setup script til VM..."
 scp `
     -i $sshPrivateKeyPath `
     -o StrictHostKeyChecking=no `
+    -o UserKnownHostsFile=/dev/null `
+    -o LogLevel=ERROR `
     $localSetupScriptPath `
     "$adminUsername@${publicIp}:/home/$adminUsername/setup.sh"
+
+if ($LASTEXITCODE -ne 0) {
+    throw "Upload af setup script fejlede med exit code $LASTEXITCODE"
+}
 
 # Kør setup script på VM
 Write-Host "Kører setup script på VM..."
 ssh `
     -i $sshPrivateKeyPath `
     -o StrictHostKeyChecking=no `
-    "$adminUsername@${publicIp}" "chmod +x setup.sh ; ./setup.sh"
+    -o UserKnownHostsFile=/dev/null `
+    -o LogLevel=ERROR `
+    "$adminUsername@${publicIp}" "sed -i 's/\r$//' setup.sh ; chmod +x setup.sh ; ./setup.sh"
+
+if ($LASTEXITCODE -ne 0) {
+    throw "Kørsel af setup script fejlede med exit code $LASTEXITCODE"
+}
 
 Write-Host "Setup script er fuldført, VM er klar!"
 
