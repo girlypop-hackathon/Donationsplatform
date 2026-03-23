@@ -52,7 +52,7 @@ jobs:
           ghcr.io/girlypop-hackathon/donationsplatform:latest
 
           for attempt in $(seq 1 20); do
-            if curl -fsS http://localhost:80 > /dev/null; then
+            if curl -fsS http://localhost:80/api/providers > /dev/null; then
               echo "Health check passed on attempt ${attempt}."
               exit 0
             fi

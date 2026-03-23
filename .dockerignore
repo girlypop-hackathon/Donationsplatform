@@ -1,0 +1,17 @@
+# /*
+# Oprettet: 18-03-2026
+# Af: Jonas og GitHub Copilot (GPT-5.3-codex)
+# Beskrivelse: Build context exclusions for Docker image creation
+# */
+
+.git
+.github
+node_modules
+Backend/node_modules
+Frontend/node_modules
+npm-debug.log
+coverage
+tests
+Documentation
+Scripts
+public
