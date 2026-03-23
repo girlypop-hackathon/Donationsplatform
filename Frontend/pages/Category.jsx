@@ -1,6 +1,6 @@
-import React from 'react'
+import React from "react";
 
-function Category () {
+function Category() {
   return (
     <section>
       <h1>Categories</h1>
@@ -11,7 +11,7 @@ function Category () {
         <li>Family and Elderly Care</li>
       </ul>
     </section>
-  )
+  );
 }
 
-export default Category
+export default Category;

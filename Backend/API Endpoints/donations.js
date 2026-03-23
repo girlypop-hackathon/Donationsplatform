@@ -1,8 +1,8 @@
 // donations.js - API endpoints for donations table
 // Handles all donation-related operations including user management, email notifications, and milestone processing
-const express = require('express');
-const queries = require('../queries');
-const emailService = require('../emailService');
+const express = require("express");
+const queries = require("../queries");
+const emailService = require("../emailService");
 
 const router = express.Router();
 
@@ -14,12 +14,12 @@ function setDatabase(database) {
 }
 
 // GET all users (from donations table)
-router.get('/api/users', async (request, response) => {
+router.get("/api/users", async (request, response) => {
   try {
     const rows = await getManyRows(queries.getAllUsers);
     response.json({
       success: true,
-      data: rows
+      data: rows,
     });
   } catch (error) {
     response.status(500).json({ error: error.message });
@@ -27,13 +27,15 @@ router.get('/api/users', async (request, response) => {
 });
 
 // GET donations by campaign ID
-router.get('/api/campaigns/:id/donations', async (request, response) => {
+router.get("/api/campaigns/:id/donations", async (request, response) => {
   try {
     const campaignId = request.params.id;
-    const rows = await getManyRows(queries.getDonationsByCampaign, [campaignId]);
+    const rows = await getManyRows(queries.getDonationsByCampaign, [
+      campaignId,
+    ]);
     response.json({
       success: true,
-      data: rows
+      data: rows,
     });
   } catch (error) {
     response.status(500).json({ error: error.message });
@@ -41,32 +43,35 @@ router.get('/api/campaigns/:id/donations', async (request, response) => {
 });
 
 // POST donation and trigger tiered thank-you + milestone follow-up notifications.
-router.post('/api/donations', async (request, response) => {
+router.post("/api/donations", async (request, response) => {
   try {
     const donationInput = {
       campaignId: Number(request.body.campaignId),
-      userName: String(request.body.userName || '').trim(),
-      email: String(request.body.email || '').trim(),
-      accountNumber: String(request.body.accountNumber || '').trim(),
+      userName: String(request.body.userName || "").trim(),
+      email: String(request.body.email || "").trim(),
+      accountNumber: String(request.body.accountNumber || "").trim(),
       campaignUpdatesOptIn: Boolean(request.body.campaignUpdatesOptIn),
       amount: Number(request.body.amount),
-      newsletterOptIn: Boolean(request.body.newsletterOptIn)
+      newsletterOptIn: Boolean(request.body.newsletterOptIn),
     };
 
     const donationValidationError = validateDonationInput(donationInput);
     if (donationValidationError) {
       response.status(400).json({
         success: false,
-        error: donationValidationError
+        error: donationValidationError,
       });
       return;
     }
 
-    const campaignRow = await getSingleRow(queries.getCampaignWithProviderName, [donationInput.campaignId]);
+    const campaignRow = await getSingleRow(
+      queries.getCampaignWithProviderName,
+      [donationInput.campaignId],
+    );
     if (!campaignRow) {
       response.status(404).json({
         success: false,
-        error: 'Campaign not found'
+        error: "Campaign not found",
       });
       return;
     }
@@ -78,39 +83,47 @@ router.post('/api/donations', async (request, response) => {
       donationInput.accountNumber,
       donationInput.campaignUpdatesOptIn ? 1 : 0,
       donationInput.amount,
-      donationInput.newsletterOptIn ? 1 : 0
+      donationInput.newsletterOptIn ? 1 : 0,
     ]);
 
-    const donationTier = emailService.getDonationTierByAmount(donationInput.amount);
+    const donationTier = emailService.getDonationTierByAmount(
+      donationInput.amount,
+    );
     const thankYouEmailContent = emailService.buildThankYouEmailForTier({
       donorName: donationInput.userName,
       campaignBio: campaignRow.campaign_bio,
       donationAmount: donationInput.amount,
-      donationTier
+      donationTier,
     });
 
     await emailService.sendEmailMessage({
       recipientEmail: donationInput.email,
       subjectLine: thankYouEmailContent.subjectLine,
-      messageText: thankYouEmailContent.messageText
+      messageText: thankYouEmailContent.messageText,
     });
 
-    if (donationTier === 'over_1000') {
+    if (donationTier === "over_1000") {
       const dedicatedFollowUpEmail = emailService.buildDedicatedFollowUpEmail({
         donorName: donationInput.userName,
-        campaignBio: campaignRow.campaign_bio
+        campaignBio: campaignRow.campaign_bio,
       });
 
       await emailService.sendEmailMessage({
         recipientEmail: donationInput.email,
         subjectLine: dedicatedFollowUpEmail.subjectLine,
-        messageText: dedicatedFollowUpEmail.messageText
+        messageText: dedicatedFollowUpEmail.messageText,
       });
     }
 
-    const totalRaisedRow = await getSingleRow(queries.getCampaignTotalDonations, [donationInput.campaignId]);
+    const totalRaisedRow = await getSingleRow(
+      queries.getCampaignTotalDonations,
+      [donationInput.campaignId],
+    );
     const totalRaisedAmount = Number(totalRaisedRow.total_raised || 0);
-    const triggeredMilestones = await processReachedMilestones(campaignRow, totalRaisedAmount);
+    const triggeredMilestones = await processReachedMilestones(
+      campaignRow,
+      totalRaisedAmount,
+    );
 
     response.status(201).json({
       success: true,
@@ -118,33 +131,35 @@ router.post('/api/donations', async (request, response) => {
         donationId: donationInsertResult.lastId,
         donationTier,
         totalRaisedAmount,
-        triggeredMilestones
-      }
+        triggeredMilestones,
+      },
     });
   } catch (error) {
     response.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
 
 // POST donation for campaign
-router.post('/api/campaigns/:id/donations', (req, res) => {
+router.post("/api/campaigns/:id/donations", (req, res) => {
   const campaignId = Number(req.params.id);
   const amount = Number(req.body?.amount);
-  const userName = req.body?.user_name || 'Anonymous Donor';
-  const email = req.body?.email || '';
-  const accountNumber = req.body?.account_number || '';
+  const userName = req.body?.user_name || "Anonymous Donor";
+  const email = req.body?.email || "";
+  const accountNumber = req.body?.account_number || "";
   const isSubscription = Boolean(req.body?.is_subscription);
   const generalNewsletter = Boolean(req.body?.general_newsletter);
 
   if (!Number.isFinite(campaignId) || campaignId <= 0) {
-    return res.status(400).json({ error: 'Valid campaign id is required' });
+    return res.status(400).json({ error: "Valid campaign id is required" });
   }
 
   if (!Number.isFinite(amount) || amount <= 0) {
-    return res.status(400).json({ error: 'A valid donation amount is required' });
+    return res
+      .status(400)
+      .json({ error: "A valid donation amount is required" });
   }
 
   db.run(
@@ -156,7 +171,7 @@ router.post('/api/campaigns/:id/donations', (req, res) => {
       accountNumber,
       isSubscription,
       amount,
-      generalNewsletter
+      generalNewsletter,
     ],
     function (err) {
       if (err) {
@@ -168,7 +183,7 @@ router.post('/api/campaigns/:id/donations', (req, res) => {
 
       // Update campaign amount_raised
       db.run(
-        'UPDATE campaigns SET amount_raised = amount_raised + ? WHERE campaign_id = ?',
+        "UPDATE campaigns SET amount_raised = amount_raised + ? WHERE campaign_id = ?",
         [amount, campaignId],
         (updateErr) => {
           if (updateErr) {
@@ -178,7 +193,7 @@ router.post('/api/campaigns/:id/donations', (req, res) => {
 
           // Fetch updated campaign to return amount_raised
           db.get(
-            'SELECT amount_raised FROM campaigns WHERE campaign_id = ?',
+            "SELECT amount_raised FROM campaigns WHERE campaign_id = ?",
             [campaignId],
             (getErr, row) => {
               if (getErr) {
@@ -197,14 +212,14 @@ router.post('/api/campaigns/:id/donations', (req, res) => {
                   is_subscription: isSubscription,
                   amount,
                   general_newsletter: generalNewsletter,
-                  amount_raised: row?.amount_raised
-                }
+                  amount_raised: row?.amount_raised,
+                },
               });
-            }
+            },
           );
-        }
+        },
       );
-    }
+    },
   );
 });
 
@@ -218,7 +233,7 @@ function runQuery(queryText, queryParams = []) {
       }
       resolve({
         changes: this.changes,
-        lastId: this.lastID
+        lastId: this.lastID,
       });
     });
   });
@@ -249,20 +264,23 @@ function getManyRows(queryText, queryParams = []) {
 }
 
 function validateDonationInput(donationInput) {
-  if (!Number.isFinite(donationInput.campaignId) || donationInput.campaignId <= 0) {
-    return 'campaignId must be a positive number';
+  if (
+    !Number.isFinite(donationInput.campaignId) ||
+    donationInput.campaignId <= 0
+  ) {
+    return "campaignId must be a positive number";
   }
 
   if (!donationInput.userName || donationInput.userName.trim().length < 2) {
-    return 'userName is required and must be at least 2 characters';
+    return "userName is required and must be at least 2 characters";
   }
 
-  if (!donationInput.email || !donationInput.email.includes('@')) {
-    return 'email is required and must be a valid email address';
+  if (!donationInput.email || !donationInput.email.includes("@")) {
+    return "email is required and must be a valid email address";
   }
 
   if (!Number.isFinite(donationInput.amount) || donationInput.amount <= 0) {
-    return 'amount must be a positive number';
+    return "amount must be a positive number";
   }
 
   return null;
@@ -271,81 +289,106 @@ function validateDonationInput(donationInput) {
 async function getReachedMilestoneEvents(campaignRow, totalRaisedAmount) {
   const reachedMilestoneEvents = [];
 
-  if (Number(campaignRow.milestone_1) > 0 && totalRaisedAmount >= Number(campaignRow.milestone_1)) {
+  if (
+    Number(campaignRow.milestone_1) > 0 &&
+    totalRaisedAmount >= Number(campaignRow.milestone_1)
+  ) {
     reachedMilestoneEvents.push({
-      eventType: 'milestone_1_reached',
-      milestoneAmount: Number(campaignRow.milestone_1)
+      eventType: "milestone_1_reached",
+      milestoneAmount: Number(campaignRow.milestone_1),
     });
   }
 
-  if (Number(campaignRow.milestone_2) > 0 && totalRaisedAmount >= Number(campaignRow.milestone_2)) {
+  if (
+    Number(campaignRow.milestone_2) > 0 &&
+    totalRaisedAmount >= Number(campaignRow.milestone_2)
+  ) {
     reachedMilestoneEvents.push({
-      eventType: 'milestone_2_reached',
-      milestoneAmount: Number(campaignRow.milestone_2)
+      eventType: "milestone_2_reached",
+      milestoneAmount: Number(campaignRow.milestone_2),
     });
   }
 
-  if (Number(campaignRow.milestone_3) > 0 && totalRaisedAmount >= Number(campaignRow.milestone_3)) {
+  if (
+    Number(campaignRow.milestone_3) > 0 &&
+    totalRaisedAmount >= Number(campaignRow.milestone_3)
+  ) {
     reachedMilestoneEvents.push({
-      eventType: 'milestone_3_reached',
-      milestoneAmount: Number(campaignRow.milestone_3)
+      eventType: "milestone_3_reached",
+      milestoneAmount: Number(campaignRow.milestone_3),
     });
   }
 
   return reachedMilestoneEvents;
 }
 
-async function sendMilestoneEmailsToSubscribers({ campaignId, campaignBio, milestoneAmount, totalRaisedAmount }) {
-  const campaignSubscribers = await getManyRows(queries.getCampaignUpdateSubscribers, [campaignId]);
+async function sendMilestoneEmailsToSubscribers({
+  campaignId,
+  campaignBio,
+  milestoneAmount,
+  totalRaisedAmount,
+}) {
+  const campaignSubscribers = await getManyRows(
+    queries.getCampaignUpdateSubscribers,
+    [campaignId],
+  );
 
-  const sendResults = await Promise.all(campaignSubscribers.map(async (subscriber) => {
-    const emailContent = emailService.buildMilestoneFollowUpEmail({
-      donorName: subscriber.user_name || 'donor',
-      campaignBio,
-      milestoneAmount,
-      totalRaisedAmount
-    });
+  const sendResults = await Promise.all(
+    campaignSubscribers.map(async (subscriber) => {
+      const emailContent = emailService.buildMilestoneFollowUpEmail({
+        donorName: subscriber.user_name || "donor",
+        campaignBio,
+        milestoneAmount,
+        totalRaisedAmount,
+      });
 
-    return emailService.sendEmailMessage({
-      recipientEmail: subscriber.email,
-      subjectLine: emailContent.subjectLine,
-      messageText: emailContent.messageText
-    });
-  }));
+      return emailService.sendEmailMessage({
+        recipientEmail: subscriber.email,
+        subjectLine: emailContent.subjectLine,
+        messageText: emailContent.messageText,
+      });
+    }),
+  );
 
   return {
     notifiedSubscribers: campaignSubscribers.length,
-    smtpSentCount: sendResults.filter((result) => result.sent).length
+    smtpSentCount: sendResults.filter((result) => result.sent).length,
   };
 }
 
 async function processReachedMilestones(campaignRow, totalRaisedAmount) {
-  const reachedMilestones = await getReachedMilestoneEvents(campaignRow, totalRaisedAmount);
+  const reachedMilestones = await getReachedMilestoneEvents(
+    campaignRow,
+    totalRaisedAmount,
+  );
   const triggeredMilestones = [];
 
   for (const reachedMilestone of reachedMilestones) {
-    const existingCampaignEvent = await getSingleRow(queries.getCampaignEventByType, [
-      campaignRow.campaign_id,
-      reachedMilestone.eventType
-    ]);
+    const existingCampaignEvent = await getSingleRow(
+      queries.getCampaignEventByType,
+      [campaignRow.campaign_id, reachedMilestone.eventType],
+    );
 
     if (existingCampaignEvent) {
       continue;
     }
 
-    await runQuery(queries.insertCampaignEvent, [campaignRow.campaign_id, reachedMilestone.eventType]);
+    await runQuery(queries.insertCampaignEvent, [
+      campaignRow.campaign_id,
+      reachedMilestone.eventType,
+    ]);
 
     const milestoneSendStats = await sendMilestoneEmailsToSubscribers({
       campaignId: campaignRow.campaign_id,
       campaignBio: campaignRow.campaign_bio,
       milestoneAmount: reachedMilestone.milestoneAmount,
-      totalRaisedAmount
+      totalRaisedAmount,
     });
 
     triggeredMilestones.push({
       eventType: reachedMilestone.eventType,
       milestoneAmount: reachedMilestone.milestoneAmount,
-      notifiedSubscribers: milestoneSendStats.notifiedSubscribers
+      notifiedSubscribers: milestoneSendStats.notifiedSubscribers,
     });
   }
 

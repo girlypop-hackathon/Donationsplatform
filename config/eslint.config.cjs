@@ -7,25 +7,25 @@ module.exports = {
   // Backend runtime environment.
   env: {
     es2022: true,
-    node: true
+    node: true,
   },
 
   // Parse modern JavaScript files as classic Node scripts.
   parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'script'
+    ecmaVersion: "latest",
+    sourceType: "script",
   },
 
   // Ignore frontend/build folders in this backend-focused config.
-  ignorePatterns: ['node_modules/', 'Frontend/**', 'public/**', 'dist/**'],
+  ignorePatterns: ["node_modules/", "Frontend/**", "public/**", "dist/**"],
 
   // Start from ESLint's recommended bug-prevention rules.
-  extends: ['eslint:recommended'],
+  extends: ["eslint:recommended"],
 
   // Relax style-heavy rules for now to avoid noisy CI failures.
   rules: {
-    'no-console': 'off',
-    'no-unused-vars': 'off',
-    camelcase: 'off'
-  }
-}
+    "no-console": "off",
+    "no-unused-vars": "off",
+    camelcase: "off",
+  },
+};

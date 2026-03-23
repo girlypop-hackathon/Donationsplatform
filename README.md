@@ -20,13 +20,29 @@ Projektet er bygget med **React** og **Vite**.
 
 ### Udviklingsserver
 
-1. I samme mappe, kør:
+1. I samme mappe - fra roden, kør:
    ```bash
    npm run dev
    ```
 2. Åbn`http://localhost:5173`
 
 ### Backend server
+
+1. Start og sæt databasen op
+
+   ```
+   cd Backend
+
+   npm run start-with-setup
+   ```
+
+2. Start når databasen allerede er sat op tidligere
+
+   ```
+   cd Backend
+
+   npm start
+   ```
 
 ## Linting og formatering
 

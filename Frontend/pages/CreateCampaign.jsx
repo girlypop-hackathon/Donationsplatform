@@ -1,23 +1,281 @@
-import React from 'react'
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
-function CreateCampaign () {
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
+const API_PREFIX = API_BASE_URL ? `${API_BASE_URL}/api` : "/api";
+
+function CreateCampaign() {
+  const navigate = useNavigate();
+
+  // Form state
+  const [formData, setFormData] = useState({
+    provider_id: "",
+    image: "",
+    campaign_bio: "",
+    body_text: "",
+    goal_amount: "",
+    amount_raised: 0,
+    milestone_1: "25% of goal reached",
+    milestone_2: "50% of goal reached",
+    milestone_3: "75% of goal reached",
+  });
+
+  // UI state
+  const [providers, setProviders] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  // Fetch providers for dropdown
+  useEffect(() => {
+    async function fetchProviders() {
+      try {
+        const response = await fetch(`${API_PREFIX}/providers`);
+        if (!response.ok) {
+          throw new Error("Could not fetch providers");
+        }
+        const result = await response.json();
+        setProviders(result.data || []);
+      } catch (err) {
+        setError("Failed to load providers. You can still create a campaign.");
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchProviders();
+  }, []);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    // Basic validation
+    if (
+      !formData.provider_id ||
+      !formData.campaign_bio ||
+      !formData.goal_amount
+    ) {
+      setError("Provider, campaign bio, and goal amount are required");
+      return;
+    }
+
+    if (
+      isNaN(parseFloat(formData.goal_amount)) ||
+      parseFloat(formData.goal_amount) <= 0
+    ) {
+      setError("Goal amount must be a positive number");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      setError("");
+      setSuccess("");
+
+      const response = await fetch(`${API_PREFIX}/campaigns`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          provider_id: parseInt(formData.provider_id),
+          image: formData.image || "https://placehold.co/800x400?text=Campaign",
+          campaign_bio: formData.campaign_bio,
+          body_text: formData.body_text,
+          goal_amount: parseFloat(formData.goal_amount),
+          amount_raised: 0,
+          milestone_1: formData.milestone_1 || null,
+          milestone_2: formData.milestone_2 || null,
+          milestone_3: formData.milestone_3 || null,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to create campaign");
+      }
+
+      const result = await response.json();
+      setSuccess("Campaign created successfully!");
+
+      // Reset form
+      setFormData({
+        provider_id: "",
+        image: "",
+        campaign_bio: "",
+        body_text: "",
+        goal_amount: "",
+        amount_raised: 0,
+        milestone_1: "25% of goal reached",
+        milestone_2: "50% of goal reached",
+        milestone_3: "75% of goal reached",
+      });
+
+      // Navigate to the new campaign page after a short delay
+      setTimeout(() => {
+        navigate(`/campaigns/${result.data.campaign_id}`);
+      }, 2000);
+    } catch (err) {
+      setError(err.message || "Failed to create campaign");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
-    <div className='form-page'>
-      <h1>Create Campaign</h1>
+    <div className="form-page">
+      <h1>Create a new campaign</h1>
+      <h2>- for now without logging in upsiiii </h2>
+      <p>
+        Fill out the form below to create a new fundraising campaign. Make sure
+        to provide a compelling title and description to attract donors. You can
+        also set funding milestones to keep your supporters engaged as you
+        progress towards your goal.
+      </p>
 
-      <form className='campaign-form'>
-        <input type='text' placeholder='Campaign title' />
+      {error && <div className="error-message">{error}</div>}
+      {success && <div className="success-message">{success}</div>}
 
-        <textarea placeholder='Description' />
+      <form className="campaign-form" onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label htmlFor="provider_id">Chose a owner *</label>
+          {isLoading ? (
+            <select name="provider_id" id="provider_id" disabled>
+              <option value="">Loading providers...</option>
+            </select>
+          ) : (
+            <select
+              name="provider_id"
+              id="provider_id"
+              value={formData.provider_id}
+              onChange={handleChange}
+              required
+            >
+              <option value="">Select a provider</option>
+              {providers.map((provider) => (
+                <option
+                  key={provider.organization_id}
+                  value={provider.organization_id}
+                >
+                  {provider.name}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
 
-        <input type='number' placeholder='Goal amount' />
+        <div className="form-group">
+          <label htmlFor="campaign_bio">Campaign title *</label>
+          <input
+            type="text"
+            name="campaign_bio"
+            id="campaign_bio"
+            placeholder="Enter campaign title"
+            value={formData.campaign_bio}
+            onChange={handleChange}
+            required
+          />
+        </div>
 
-        <input type='date' />
+        <div className="form-group">
+          <label htmlFor="body_text">Campaign description</label>
+          <textarea
+            name="body_text"
+            id="body_text"
+            placeholder="Enter description of your campaign..."
+            value={formData.body_text}
+            onChange={handleChange}
+            rows={5}
+          />
+        </div>
 
-        <button>Create Campaign</button>
+        <div className="form-group">
+          <label htmlFor="image">Insert campaign image via URL</label>
+          <input
+            type="url"
+            name="image"
+            id="image"
+            placeholder="https://example.com/image.jpg"
+            value={formData.image}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="goal_amount">Funding goal (DKK) *</label>
+          <input
+            type="number"
+            name="goal_amount"
+            id="goal_amount"
+            placeholder="Enter target amount"
+            value={formData.goal_amount}
+            onChange={handleChange}
+            min="1"
+            step="1"
+            required
+          />
+        </div>
+
+        <div className="milestones-section">
+          <h3>Funding Milestones</h3>
+          <p>
+            Define milestones to motivate donors and show progress. These are
+            optional but can help increase engagement. Your subscribing donaters
+            will be notified when these milestones are reached.
+          </p>
+
+          <div className="form-group">
+            <label htmlFor="milestone_1">Milestone 1</label>
+            <input
+              type="text"
+              name="milestone_1"
+              id="milestone_1"
+              placeholder='25% milestone - e.g., "Initial funding secured"'
+              value={formData.milestone_1}
+              onChange={handleChange}
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="milestone_2">Milestone 2 </label>
+            <input
+              type="text"
+              name="milestone_2"
+              id="milestone_2"
+              placeholder='50% milestone - e.g., "Halfway to our goal!"'
+              value={formData.milestone_2}
+              onChange={handleChange}
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="milestone_3">Milestone 3 </label>
+            <input
+              type="text"
+              name="milestone_3"
+              id="milestone_3"
+              placeholder='75% milestone - e.g., "Almost there! Final push needed"'
+              value={formData.milestone_3}
+              onChange={handleChange}
+            />
+          </div>
+        </div>
+
+        <button type="submit" className="create-button" disabled={isSubmitting}>
+          {isSubmitting ? "Creating Campaign..." : "Create Campaign"}
+        </button>
       </form>
     </div>
-  )
+  );
 }
 
-export default CreateCampaign
+export default CreateCampaign;

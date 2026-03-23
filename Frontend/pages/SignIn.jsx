@@ -1,26 +1,98 @@
-import React from 'react'
+import React, { useState } from "react";
+import { Navigate, useNavigate } from "react-router-dom";
 
-function SignIn () {
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
+const API_PREFIX = API_BASE_URL ? `${API_BASE_URL}/api` : "/api";
+
+function SignIn({ isAuthenticated, onLogin, isCheckingSession }) {
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  if (!isCheckingSession && isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+
+    if (isSubmitting) return;
+
+    try {
+      setErrorMessage("");
+      setIsSubmitting(true);
+
+      const response = await fetch(`${API_PREFIX}/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result?.data?.token || !result?.data?.user) {
+        throw new Error(result?.error || "Login failed");
+      }
+
+      await onLogin(result.data.token, result.data.user);
+      navigate("/dashboard");
+    } catch (error) {
+      setErrorMessage(error.message || "Could not sign in. Try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   return (
-    <section>
+    <section className="auth-card">
       <h1>Sign In</h1>
-      <form>
+      <form onSubmit={handleSubmit}>
         <p>
-          <label htmlFor='email'>Email</label>
+          <label htmlFor="email">Email</label>
           <br />
-          <input id='email' type='email' placeholder='name@example.com' />
+          <input
+            id="email"
+            type="email"
+            placeholder="name@example.com"
+            value={email}
+            onChange={(event) => {
+              setEmail(event.target.value);
+            }}
+            required
+          />
         </p>
 
         <p>
-          <label htmlFor='password'>Password</label>
+          <label htmlFor="password">Password</label>
           <br />
-          <input id='password' type='password' placeholder='Password' />
+          <input
+            id="password"
+            type="password"
+            placeholder="Password"
+            minLength="8"
+            value={password}
+            onChange={(event) => {
+              setPassword(event.target.value);
+            }}
+            required
+          />
         </p>
 
-        <button type='submit'>Sign In</button>
+        {errorMessage && <p className="auth-error">{errorMessage}</p>}
+
+        <button type="submit" disabled={isSubmitting || isCheckingSession}>
+          {isSubmitting ? "Signing in..." : "Sign In"}
+        </button>
       </form>
     </section>
-  )
+  );
 }
 
-export default SignIn
+export default SignIn;

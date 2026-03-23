@@ -1,6 +1,6 @@
-import React from 'react'
+import React from "react";
 
-function Info () {
+function Info() {
   return (
     <section>
       <h1>Info</h1>
@@ -13,7 +13,7 @@ function Info () {
         that matter.
       </p>
     </section>
-  )
+  );
 }
 
-export default Info
+export default Info;
