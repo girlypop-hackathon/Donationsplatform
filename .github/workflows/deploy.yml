@@ -9,7 +9,7 @@ name: Build and Deploy
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, Developer ]
 
 jobs:
   build-and-deploy:
@@ -50,5 +50,19 @@ jobs:
 
           docker run -d -p 80:3000 --name app \
           ghcr.io/girlypop-hackathon/donationsplatform:latest
+
+          for attempt in $(seq 1 20); do
+            if curl -fsS http://localhost:80 > /dev/null; then
+              echo "Health check passed on attempt ${attempt}."
+              exit 0
+            fi
+
+            echo "Health check attempt ${attempt} failed, retrying..."
+            sleep 3
+          done
+
+          echo "Health check failed after 20 attempts. Showing container logs..."
+          docker logs app || true
+          exit 1
 
           EOF

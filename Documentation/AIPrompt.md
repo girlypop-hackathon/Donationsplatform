@@ -16,7 +16,7 @@ If you create big changes you need my approval first
 
 Make a comment in the top all files following this format:
 /*
-Oprettet: 18-03-2026
+Oprettet: (Date created)
 Af: Navn og Navn på AI (GPT-5.3-codex)
 Beskrivelse: API endpoints for the donation platform
 */
