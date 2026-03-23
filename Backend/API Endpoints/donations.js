@@ -68,6 +68,7 @@ async function processDonationAndEmailFlow (donationInput) {
 
   const donationInsertResult = await runQuery(queries.insertDonation, [
     donationInput.campaignId,
+    donationInput.userId,
     donationInput.userName,
     donationInput.email,
     donationInput.accountNumber,
@@ -173,30 +174,6 @@ router.post("/api/donations", async (request, response) => {
       isAnonymousDonation: false
     }
 
-    const donationResult = await processDonationAndEmailFlow(donationInput)
-    if (!donationResult.success) {
-      response.status(donationResult.statusCode).json({
-        success: false,
-        error: donationResult.error
-      })
-      return
-    }
-
-    response.status(201).json({
-      success: true,
-      data: donationResult.data
-    })
-    };
-
-    const donationValidationError = validateDonationInput(donationInput);
-    if (donationValidationError) {
-      response.status(400).json({
-        success: false,
-        error: donationValidationError,
-      });
-      return;
-    }
-
     if (!authHelpers) {
       response.status(500).json({
         success: false,
@@ -209,6 +186,7 @@ router.post("/api/donations", async (request, response) => {
       email: donationInput.email,
       name: donationInput.userName,
     });
+
     if (!userResult.ok) {
       response.status(400).json({
         success: false,
@@ -217,67 +195,16 @@ router.post("/api/donations", async (request, response) => {
       return;
     }
 
-    const campaignRow = await getSingleRow(
-      queries.getCampaignWithProviderName,
-      [donationInput.campaignId],
-    );
-    if (!campaignRow) {
-      response.status(404).json({
+    donationInput.userId = userResult.user.user_id;
+
+    const donationResult = await processDonationAndEmailFlow(donationInput)
+    if (!donationResult.success) {
+      response.status(donationResult.statusCode).json({
         success: false,
-        error: "Campaign not found",
-      });
-      return;
+        error: donationResult.error
+      })
+      return
     }
-
-    const donationInsertResult = await runQuery(queries.insertDonation, [
-      donationInput.campaignId,
-      userResult.user.user_id,
-      donationInput.userName,
-      donationInput.email,
-      donationInput.accountNumber,
-      donationInput.campaignUpdatesOptIn ? 1 : 0,
-      donationInput.amount,
-      donationInput.newsletterOptIn ? 1 : 0,
-    ]);
-
-    const donationTier = emailService.getDonationTierByAmount(
-      donationInput.amount,
-    );
-    const thankYouEmailContent = emailService.buildThankYouEmailForTier({
-      donorName: donationInput.userName,
-      campaignBio: campaignRow.campaign_bio,
-      donationAmount: donationInput.amount,
-      donationTier,
-    });
-
-    await emailService.sendEmailMessage({
-      recipientEmail: donationInput.email,
-      subjectLine: thankYouEmailContent.subjectLine,
-      messageText: thankYouEmailContent.messageText,
-    });
-
-    if (donationTier === "over_1000") {
-      const dedicatedFollowUpEmail = emailService.buildDedicatedFollowUpEmail({
-        donorName: donationInput.userName,
-        campaignBio: campaignRow.campaign_bio,
-      });
-
-      await emailService.sendEmailMessage({
-        recipientEmail: donationInput.email,
-        subjectLine: dedicatedFollowUpEmail.subjectLine,
-        messageText: dedicatedFollowUpEmail.messageText,
-      });
-    }
-
-    const totalRaisedRow = await getSingleRow(
-      queries.getCampaignTotalDonations,
-      [donationInput.campaignId],
-    );
-    const totalRaisedAmount = Number(totalRaisedRow.total_raised || 0);
-    const triggeredMilestones = await processReachedMilestones(
-      campaignRow,
-      totalRaisedAmount,
-    );
 
     if (userResult.newlyActivatable) {
       await authHelpers.sendActivationEmailForUser(userResult.user);
@@ -285,13 +212,8 @@ router.post("/api/donations", async (request, response) => {
 
     response.status(201).json({
       success: true,
-      data: {
-        donationId: donationInsertResult.lastId,
-        donationTier,
-        totalRaisedAmount,
-        triggeredMilestones,
-      },
-    });
+      data: donationResult.data
+    })
   } catch (error) {
     response.status(500).json({
       success: false,
@@ -618,4 +540,4 @@ async function sendGoalReachedEmailsToDonors ({ campaignId, campaignBio, goalAmo
   }
 }
 
-module.exports = { router, setDatabase }
+module.exports = { router, setDatabase, setAuthHelpers }

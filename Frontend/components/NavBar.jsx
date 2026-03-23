@@ -4,11 +4,9 @@ Af: Føen
 Beskrivelse: Navigationsbar med links og logo til donationsplatformen
 */
 
-import React from 'react'
-import { Link } from 'react-router-dom'
-import { resolveLogoImageSource } from '../utils/imagePaths'
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { resolveLogoImageSource } from "../utils/imagePaths";
 
 function Navbar({ isAuthenticated, authUser, onLogout }) {
   const location = useLocation();
@@ -123,7 +121,7 @@ function Navbar({ isAuthenticated, authUser, onLogout }) {
         <h1 className="logo">FundTogether</h1>
         <img
           className="logo-icon"
-          src="/images/fundtogether-logo.png"
+          src={resolveLogoImageSource("fundtogether-logo.png")}
           alt="FundTogether logo"
         />
       </Link>

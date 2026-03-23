@@ -1,11 +1,20 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import ProgressBar from "../components/ProgressBar";
+import {
+  applyImageFallbackOnce,
+  createImagePlaceholderDataUri,
+  resolveCampaignImageSource,
+} from "../utils/imagePaths";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 const API_PREFIX = API_BASE_URL ? `${API_BASE_URL}/api` : "/api";
 
-const FALLBACK_IMAGE_URL = "https://placehold.co/800x420?text=Campaign";
+const FALLBACK_IMAGE_URL = resolveCampaignImageSource(
+  "",
+  "fundtogether-logo.png",
+);
+const BACKUP_FALLBACK_IMAGE_URL = createImagePlaceholderDataUri("Campaign");
 
 function Dashboard({ authUser }) {
   const [myCampaigns, setMyCampaigns] = useState([]);
@@ -187,8 +196,18 @@ function Dashboard({ authUser }) {
                   >
                     <Link to={campaignPath} className="dashboard-campaign-image-link">
                       <img
-                        src={campaign.image || FALLBACK_IMAGE_URL}
+                        src={resolveCampaignImageSource(
+                          campaign.image,
+                          "fundtogether-logo.png",
+                        )}
                         alt={campaign.campaign_bio || "Campaign"}
+                        onError={(event) => {
+                          applyImageFallbackOnce(
+                            event,
+                            FALLBACK_IMAGE_URL,
+                            BACKUP_FALLBACK_IMAGE_URL,
+                          )
+                        }}
                       />
                     </Link>
 

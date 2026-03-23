@@ -9,12 +9,14 @@ Uses a fallback image if no image is provided or if the image fails to load.
 import React from 'react'
 import { Link } from 'react-router-dom'
 import ProgressBar from './ProgressBar'
-import { resolveCampaignImageSource } from '../utils/imagePaths'
+import {
+  applyImageFallbackOnce,
+  createImagePlaceholderDataUri,
+  resolveCampaignImageSource
+} from '../utils/imagePaths'
 
-const FALLBACK_IMAGE = resolveCampaignImageSource('animal-rescue.jpg')
-
-// Billede der vises hvis der ikke er billede i databasen ELLER hvis vi ikke henter korrekt
-const FALLBACK_IMAGE = "https://placehold.co/600x400?text=Campaign";
+const FALLBACK_IMAGE = resolveCampaignImageSource('', 'fundtogether-logo.png')
+const BACKUP_FALLBACK_IMAGE = createImagePlaceholderDataUri('Campaign')
 
 function CampaignCard({ campaign }) {
   if (!campaign) {
@@ -26,14 +28,15 @@ function CampaignCard({ campaign }) {
 
   const goalAmount = Number(campaign.goal_amount) || 0;
   const raisedAmount = Number(campaign.amount_raised) || 0;
+  const imageSource = resolveCampaignImageSource(campaign.image, 'fundtogether-logo.png')
 
   return (
     <div className="card">
       <img
-        src={campaign.image || FALLBACK_IMAGE}
+        src={imageSource}
         alt={campaign.campaign_bio || "Animal campaign"}
         onError={(event) => {
-          event.currentTarget.src = FALLBACK_IMAGE;
+          applyImageFallbackOnce(event, FALLBACK_IMAGE, BACKUP_FALLBACK_IMAGE)
         }}
       />
 
