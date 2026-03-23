@@ -69,3 +69,6 @@ Der er nu en GitHub Actions workflow i `.github/workflows/lint.yml`.
 ## AI prompt
 
 spec kit - hvordan foreslår de at man udvikler med AI. Laver kravspekifekation og man vericiferer
+
+Tilføj en deadline kollone i Campaign tabellen, og tilføj det også i et p-tag på CampaignPage. Hvilken sql-lite datatype burde bruges til datoen? Tilføj også i CreateCampaign (samt de endpoints der skal rettes hertil), funktionalitet til at vælge deadline når man opretter en kampagne. 
+Undersøg herefter hvordan det ville tilføjes til Dashboard på en brugers kampagne overblik. 

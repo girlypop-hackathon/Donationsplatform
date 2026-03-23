@@ -148,6 +148,19 @@ function Dashboard({ authUser }) {
     });
   }
 
+  function formatDate(value) {
+    if (!value) return "No deadline";
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "No deadline";
+
+    return date.toLocaleDateString("da-DK", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  }
+
   return (
     <section className="dashboard-card">
       <h1>Dashboard</h1>
@@ -222,6 +235,12 @@ function Dashboard({ authUser }) {
                       <p className="dashboard-campaign-meta">
                         {campaign.provider_name || "Unknown organization"}
                       </p>
+
+                      {campaign.deadline && (
+                        <p className="dashboard-campaign-deadline">
+                          Deadline: {formatDate(campaign.deadline)}
+                        </p>
+                      )}
 
                       <ProgressBar
                         value={Number(campaign.amount_raised || 0)}

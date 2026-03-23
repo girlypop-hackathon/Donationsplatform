@@ -155,6 +155,12 @@ function CampaignPage() {
 
       <p>{campaign.body_text || "No description available yet."}</p>
 
+      {campaign.deadline && (
+        <p className="campaign-deadline">
+          Campaign deadline: {new Date(campaign.deadline).toLocaleDateString('da-DK')}
+        </p>
+      )}
+
       <ProgressBar value={raisedAmount} max={goalAmount} />
       <h3>{`Raised: ${raisedAmount} / Goal: ${goalAmount} DKK`}</h3>
 

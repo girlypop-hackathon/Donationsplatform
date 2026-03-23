@@ -85,7 +85,7 @@ const queries = {
   createProvider:
     "INSERT INTO providers (name, logo, bio, website_link, is_organization) VALUES (?, ?, ?, ?, ?)",
   createCampaign:
-    "INSERT INTO campaigns (provider_id, image, campaign_bio, body_text, goal_amount, amount_raised, milestone_1, milestone_2, milestone_3) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    "INSERT INTO campaigns (provider_id, image, campaign_bio, body_text, goal_amount, amount_raised, milestone_1, milestone_2, milestone_3, deadline) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
   createDonation:
     "INSERT INTO donations (campaign_id, user_id, user_name, email, account_number, is_subscription, amount, general_newsletter) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
 };

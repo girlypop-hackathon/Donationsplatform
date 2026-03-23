@@ -35,6 +35,7 @@ db.serialize(() => {
     milestone_1 INTEGER,
     milestone_2 INTEGER,
     milestone_3 INTEGER,
+    deadline TEXT,
     FOREIGN KEY (provider_id) REFERENCES providers (organization_id)
   )`);
 
@@ -292,6 +293,7 @@ function insertSampleData(db, onComplete) {
       milestone_1: 1000,
       milestone_2: 2500,
       milestone_3: 4000,
+      deadline: "2026-12-31",
     },
     {
       provider_id: 2,
@@ -304,6 +306,7 @@ function insertSampleData(db, onComplete) {
       milestone_1: 2000,
       milestone_2: 5000,
       milestone_3: 8000,
+      deadline: "2026-11-15",
     },
     {
       provider_id: 3,
@@ -316,6 +319,7 @@ function insertSampleData(db, onComplete) {
       milestone_1: 500,
       milestone_2: 1500,
       milestone_3: 2500,
+      deadline: "2026-10-31",
     },
     {
       provider_id: 4,
@@ -328,11 +332,12 @@ function insertSampleData(db, onComplete) {
       milestone_1: 3000,
       milestone_2: 7500,
       milestone_3: 12000,
+      deadline: "2026-09-30",
     },
   ];
 
   const campaignStmt = db.prepare(
-    "INSERT INTO campaigns (provider_id, image, campaign_bio, body_text, goal_amount, amount_raised, milestone_1, milestone_2, milestone_3) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    "INSERT INTO campaigns (provider_id, image, campaign_bio, body_text, goal_amount, amount_raised, milestone_1, milestone_2, milestone_3, deadline) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
   );
   campaigns.forEach((campaign) => {
     campaignStmt.run(
@@ -345,6 +350,7 @@ function insertSampleData(db, onComplete) {
       campaign.milestone_1,
       campaign.milestone_2,
       campaign.milestone_3,
+      campaign.deadline,
     );
   });
   campaignStmt.finalize();

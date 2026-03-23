@@ -212,8 +212,9 @@ router.post("/api/campaigns", async (req, res) => {
         milestone_1,
         milestone_2,
         milestone_3,
+        deadline,
         created_by_user_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         provider_id,
         image,
@@ -224,6 +225,7 @@ router.post("/api/campaigns", async (req, res) => {
         milestone_1,
         milestone_2,
         milestone_3,
+        deadline,
         userResult.user.user_id,
       ],
     );
@@ -245,6 +247,7 @@ router.post("/api/campaigns", async (req, res) => {
         milestone_1,
         milestone_2,
         milestone_3,
+        deadline,
         created_by_user_id: userResult.user.user_id,
       },
     });
