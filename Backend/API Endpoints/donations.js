@@ -245,19 +245,23 @@ router.post("/api/campaigns/:id/donations", async (request, response) => {
       amount: Number(request.body?.amount),
       newsletterOptIn: normalizedCampaignDonation.generalNewsletter,
       isAnonymousDonation: normalizedCampaignDonation.isAnonymousDonation,
+      userId: null,
     }
 
-    const userResult = await authHelpers.findOrCreateUserForEmail({
-      email: donationInput.email,
-      name: donationInput.userName,
-    });
+    let userResult = null;
+    if (!donationInput.isAnonymousDonation) {
+      userResult = await authHelpers.findOrCreateUserForEmail({
+        email: donationInput.email,
+        name: donationInput.userName,
+      });
 
-    if (!userResult.ok) {
-      response.status(400).json({ error: userResult.error });
-      return;
+      if (!userResult.ok) {
+        response.status(400).json({ error: userResult.error });
+        return;
+      }
+
+      donationInput.userId = userResult.user.user_id;
     }
-
-    donationInput.userId = userResult.user.user_id;
 
     const donationResult = await processDonationAndEmailFlow(donationInput)
     if (!donationResult.success) {
@@ -265,7 +269,7 @@ router.post("/api/campaigns/:id/donations", async (request, response) => {
       return
     }
 
-    if (userResult.newlyActivatable) {
+    if (userResult?.newlyActivatable) {
       try {
         await authHelpers.sendActivationEmailForUser(userResult.user);
       } catch (emailError) {
@@ -281,7 +285,7 @@ router.post("/api/campaigns/:id/donations", async (request, response) => {
       data: {
         donation_id: donationResult.data.donationId,
         campaign_id: donationResult.data.campaignId,
-        user_id: userResult.user.user_id,
+        user_id: donationInput.userId,
         user_name: donationResult.data.userName,
         email: donationResult.data.email,
         account_number: donationResult.data.accountNumber,

@@ -4,6 +4,17 @@ import { useNavigate } from "react-router-dom";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 const API_PREFIX = API_BASE_URL ? `${API_BASE_URL}/api` : "/api";
 
+const CAMPAIGN_CATEGORIES = [
+  "Medical Support",
+  "Animal Rescue",
+  "Family and Elderly Care",
+  "Education",
+  "Emergency Relief",
+  "Environment",
+  "Community Projects",
+  "Other",
+];
+
 function CreateCampaign() {
   const navigate = useNavigate();
 
@@ -14,6 +25,7 @@ function CreateCampaign() {
     provider_id: "",
     provider_name: "",
     use_private_provider: false,
+    category: "Medical Support",
     image: "",
     campaign_bio: "",
     body_text: "",
@@ -123,6 +135,7 @@ function CreateCampaign() {
             ? formData.provider_name.trim()
             : null,
           is_private_provider: Boolean(formData.use_private_provider),
+          category: formData.category,
           image: formData.image || "https://placehold.co/800x400?text=Campaign",
           campaign_bio: formData.campaign_bio,
           body_text: formData.body_text,
@@ -150,6 +163,7 @@ function CreateCampaign() {
         provider_id: "",
         provider_name: "",
         use_private_provider: false,
+        category: "Medical Support",
         image: "",
         campaign_bio: "",
         body_text: "",
@@ -262,6 +276,23 @@ function CreateCampaign() {
             value={formData.provider_name}
             onChange={handleChange}
           />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="category">Category *</label>
+          <select
+            name="category"
+            id="category"
+            value={formData.category}
+            onChange={handleChange}
+            required
+          >
+            {CAMPAIGN_CATEGORIES.map((categoryOption) => (
+              <option key={categoryOption} value={categoryOption}>
+                {categoryOption}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="form-group">

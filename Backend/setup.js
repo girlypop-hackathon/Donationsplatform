@@ -27,6 +27,7 @@ db.serialize(() => {
   db.run(`CREATE TABLE IF NOT EXISTS campaigns (
     campaign_id INTEGER PRIMARY KEY AUTOINCREMENT,
     provider_id INTEGER,
+    category TEXT,
     image TEXT,
     campaign_bio TEXT,
     body_text TEXT,
