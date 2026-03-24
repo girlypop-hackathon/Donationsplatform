@@ -36,6 +36,19 @@ function createSmtpTransporter() {
 
 const smtpTransporter = createSmtpTransporter();
 
+if (smtpTransporter) {
+  console.log("[EMAIL] SMTP transporter configured", {
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT || 587),
+    secure: process.env.SMTP_SECURE === "true",
+    from: senderEmailAddress,
+  });
+} else {
+  console.warn(
+    "[EMAIL] SMTP is not configured. Emails will be logged with EMAIL_FALLBACK_LOG instead of being sent.",
+  );
+}
+
 /**
  * Sends an email through SMTP when configured, otherwise logs the message as a safe fallback.
  */
