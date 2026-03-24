@@ -155,6 +155,12 @@ function CampaignPage() {
 
       <p>{campaign.body_text || "No description available yet."}</p>
 
+      {campaign.deadline && (
+        <p className="campaign-deadline">
+          Campaign deadline: {new Date(campaign.deadline).toLocaleDateString('da-DK')}
+        </p>
+      )}
+
       <ProgressBar value={raisedAmount} max={goalAmount} />
       <h3>{`Raised: ${raisedAmount} / Goal: ${goalAmount} DKK`}</h3>
 
@@ -188,7 +194,12 @@ function CampaignPage() {
           <p className="selected-donation">{`Selected donation: ${selectedAmount} DKK`}</p>
         )}
 
-        <button type="button" disabled={!hasValidAmount} onClick={handleDonate}>
+        <button 
+        type="button" 
+        disabled={!hasValidAmount}
+        onClick={handleDonate}
+        id="continue-to-payment-btn"
+        >
           Continue to payment
         </button>
       </div>

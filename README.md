@@ -69,3 +69,8 @@ Der er nu en GitHub Actions workflow i `.github/workflows/lint.yml`.
 ## AI prompt
 
 spec kit - hvordan foreslår de at man udvikler med AI. Laver kravspekifekation og man vericiferer
+
+I need some style changes
+First, change the color of the buttons on CampaignPage to be the same blue color we have been using. 
+On Homepage the organisation links should also be this color. 
+Lastly, add blue boxes around the campaignCards on Home. They should always be the name size. 

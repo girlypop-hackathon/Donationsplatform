@@ -1,6 +1,6 @@
 /*
-Oprettet: 18-03-2026
-Af: Linea og Mistral Vibe
+Oprettet: ?
+Af: ?
 Beskrivelse: Hjælpefunktioner til at bygge stabile billedstier for lokale og seedede billeder
 */
 

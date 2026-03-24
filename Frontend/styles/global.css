@@ -385,19 +385,19 @@ body {
 }
 
 .organization-card {
-  background: white;
+  background: ghostwhite;
   border-radius: 8px;
   padding: 15px;
 }
 
 .organization-link {
-  color: #2ecc71;
+  color: #0b2eae;
   text-decoration: none;
   font-weight: 600;
 }
 
 .card {
-  background: white;
+  background: ghostwhite;
   padding: 15px;
   border-radius: 8px;
 }
@@ -426,7 +426,7 @@ body {
   display: block;
   width: 100%;
   padding: 10px;
-  background: #2ecc71;
+  background: #ea672d;
   color: white;
   border: none;
   text-align: center;
@@ -434,10 +434,9 @@ body {
 }
 
 .donation-box {
-  margin-top: 20px;
-  background: white;
-  padding: 15px;
+  background: ghostwhite;
   border-radius: 8px;
+  padding: 10px;
 }
 
 .preset-donations {
@@ -450,15 +449,25 @@ body {
 .preset-btn {
   border: 1px solid #ddd;
   border-radius: 8px;
-  background: #fff;
+  background: #ea672d;
   padding: 10px;
   cursor: pointer;
+  border:none; 
+}
+
+#continue-to-payment-btn {
+  background: #ea672d;
+  color: white;
+}
+
+#continue-to-payment-btn:hover {
+  background: orange;
+  color: white;
 }
 
 .preset-btn.active {
-  background: #2ecc71;
+  background: orange;
   color: white;
-  border-color: #2ecc71;
 }
 
 .donation-box input {
@@ -486,7 +495,6 @@ body {
   padding: 10px;
   border: none;
   border-radius: 8px;
-  background: #2ecc71;
   color: white;
   cursor: pointer;
 }
@@ -510,6 +518,12 @@ body {
   border-radius: 8px;
   margin-bottom: 20px;
   display: block;
+}
+
+.campaign-deadline {
+  font-style: italic;
+  color: #666;
+  margin: 10px 0;
 }
 
 .campaign-page h1 {
@@ -561,9 +575,10 @@ body {
   justify-content: center;
   gap: 6px;
   text-align: center;
-  padding: 20px;
-  margin-top: 40px;
-  background: white;
+  margin-top: 50px;
+  padding: 50px;
+  color: white;
+  background: #0b2eae;
 }
 
 .footer p {

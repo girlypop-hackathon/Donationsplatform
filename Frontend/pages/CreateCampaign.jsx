@@ -20,6 +20,7 @@ function CreateCampaign() {
     milestone_1: "25% of goal reached",
     milestone_2: "50% of goal reached",
     milestone_3: "75% of goal reached",
+    deadline: "",
   });
 
   // UI state
@@ -109,6 +110,7 @@ function CreateCampaign() {
           milestone_1: formData.milestone_1 || null,
           milestone_2: formData.milestone_2 || null,
           milestone_3: formData.milestone_3 || null,
+          deadline: formData.deadline || null,
         }),
       });
 
@@ -263,6 +265,17 @@ function CreateCampaign() {
             min="1"
             step="1"
             required
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="deadline">Campaign deadline (optional)</label>
+          <input
+            type="date"
+            name="deadline"
+            id="deadline"
+            value={formData.deadline}
+            onChange={handleChange}
           />
         </div>
 
