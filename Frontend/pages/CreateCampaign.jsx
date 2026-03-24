@@ -1,3 +1,9 @@
+/*
+Oprettet: 17-03-2026
+Oprettet af: Føen og Codex
+Beskrivelse: CreateCampaign page. Provides a form for users to create a new campaign.
+*/
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 

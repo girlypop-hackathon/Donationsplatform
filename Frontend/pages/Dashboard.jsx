@@ -1,3 +1,9 @@
+/*
+Oprettet: 22-03-2026
+Oprettet af: Føen og Codex
+Beskrivelse: Dashboard page. Displays user profile information, a list of the user's campaigns with options to edit or delete them, and analytics data about the user's campaigns and donations. Fetches data from the API on component mount and handles various user interactions related to campaign management.
+*/
+
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import ProgressBar from "../components/ProgressBar";

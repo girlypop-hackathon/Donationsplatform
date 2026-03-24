@@ -1,3 +1,9 @@
+/*
+Oprettet: 23-03-2026
+Oprettet af: Føen og Codex
+Beskrivelse: ActivateAccount component. Provides a form for users to set their password and activate their account using a token from the URL. Handles form submission, validation, and displays error messages as needed. On successful activation, logs the user in and redirects to the dashboard.
+*/
+
 import React, { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 

@@ -1,6 +1,6 @@
 /*
 Oprettet: 24-03-2026
-Af: Jonas og Navn på AI (GPT-5.3-codex)
+Af: Jonas og GPT-5.3-codex
 Beskrivelse: API endpoints for the donation platform
 */
 

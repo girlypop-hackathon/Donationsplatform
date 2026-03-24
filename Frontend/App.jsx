@@ -1,3 +1,9 @@
+/*
+Oprettet: 17-03-2026
+Oprettet af: Nikoleta
+Beskrivelse: Main App component. Sets up routing for the application using React Router, manages authentication state, and provides a protected route component to restrict access to certain pages based on authentication status. Also includes a Navbar and Footer that are displayed on all pages. Fetches the current user's session on app load and provides login/logout functionality through an authApi object.
+*/
+
 import React, { useEffect, useMemo, useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 

@@ -1,3 +1,10 @@
+/*
+Oprettet: 19-03-2026
+Oprettet af: Linea og Mistral Vibe
+Beskrivelse: was needed to cleanup at some point, might not need it anymore. 
+Script for complete database cleanup. This script connects to the SQLite database, identifies and removes duplicate campaigns (based on organization and campaign bio) and duplicate donations (based on user, campaign, and amount). It also cleans up orphaned records in the donations and campaigns tables. The script logs the state of the database before and after cleanup, as well as any errors encountered during the process.
+*/
+
 const sqlite3 = require("sqlite3").verbose();
 
 console.log("🧹 Performing complete database cleanup...");

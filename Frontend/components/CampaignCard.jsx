@@ -1,7 +1,6 @@
 /*
 Oprettet: 17-03-2026
-Af: Linea og Mistral Vibe
-Beskrivelse: Kortvisning af kampagne med billede, status og link
+Oprettet af: Nikoleta
 Beskrivelse: CampaignCard componenter. Displays campaign image, bio, progress bar, and a link to view the campaign details.
 Uses a fallback image if no image is provided or if the image fails to load.
 */

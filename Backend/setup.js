@@ -1,3 +1,9 @@
+/*
+Oprettet: 17-03-2026
+Af: Linea og Mistral Vibe
+Beskrivelse: Script to initialize the SQLite database with tables and sample data for the donation platform
+*/
+
 const sqlite3 = require("sqlite3").verbose();
 const path = require("path");
 

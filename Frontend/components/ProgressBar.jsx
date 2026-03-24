@@ -1,3 +1,8 @@
+/*
+Oprettet: 17-03-2026
+Oprettet af: Nikoleta
+Beskrivelse: ProgressBar component. Displays a horizontal progress bar based on the provided value and max props. The width of the filled portion of the bar is calculated as (value / max) * 100, with safeguards to ensure valid input and prevent overflow.
+*/
 import React from "react";
 
 function ProgressBar({ value = 0, max = 100 }) {

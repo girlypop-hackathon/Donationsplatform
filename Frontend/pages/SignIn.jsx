@@ -1,3 +1,9 @@
+/*
+Oprettet: 20-03-2026
+Oprettet af: Føen og Codex
+Beskrivelse: SignIn component. Provides a form for users to sign in with their email and password. Handles form submission, displays error messages, and redirects to the dashboard on successful login. Also includes functionality to request an account activation link if the user's account is not yet active.
+*/
+
 import React, { useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 

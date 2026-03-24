@@ -1,3 +1,9 @@
+/*
+Oprettet: 20-03-2026
+Oprettet af: Føen og Codex
+Beskrivelse: Search for webapp.
+*/
+
 import React, { useEffect, useMemo, useState } from "react";
 import CampaignCard from "../components/CampaignCard";
 

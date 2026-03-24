@@ -1,3 +1,9 @@
+/*
+Oprettet: 24-03-2026
+Oprettet af: Føen og Codex
+Beskrivelse:  AI written info page for the webapp
+*/
+
 import React from "react";
 
 function Info() {
