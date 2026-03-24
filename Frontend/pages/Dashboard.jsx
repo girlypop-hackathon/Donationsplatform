@@ -16,10 +16,36 @@ const FALLBACK_IMAGE_URL = resolveCampaignImageSource(
 );
 const BACKUP_FALLBACK_IMAGE_URL = createImagePlaceholderDataUri("Campaign");
 
+async function readJsonSafely(response) {
+  const rawBody = await response.text();
+
+  if (!rawBody) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(rawBody);
+  } catch (_error) {
+    return {};
+  }
+}
+
 function Dashboard({ authUser }) {
   const [myCampaigns, setMyCampaigns] = useState([]);
   const [isLoadingCampaigns, setIsLoadingCampaigns] = useState(true);
   const [campaignError, setCampaignError] = useState("");
+  const [campaignActionError, setCampaignActionError] = useState("");
+  const [campaignActionSuccess, setCampaignActionSuccess] = useState("");
+  const [campaignBeingEditedId, setCampaignBeingEditedId] = useState(null);
+  const [isSavingCampaign, setIsSavingCampaign] = useState(false);
+  const [isDeletingCampaignId, setIsDeletingCampaignId] = useState(null);
+  const [campaignEditForm, setCampaignEditForm] = useState({
+    campaign_bio: "",
+    body_text: "",
+    image: "",
+    goal_amount: "",
+    deadline: "",
+  });
   const [analytics, setAnalytics] = useState({
     summary: {
       campaignsCount: 0,
@@ -31,6 +57,7 @@ function Dashboard({ authUser }) {
   });
   const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(true);
   const [analyticsError, setAnalyticsError] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     async function fetchMyCampaigns() {
@@ -53,10 +80,10 @@ function Dashboard({ authUser }) {
           fetch(`${API_PREFIX}/users/${userId}/campaigns/analytics`),
         ]);
 
-        const campaignResult = await campaignResponse.json();
+        const campaignResult = await readJsonSafely(campaignResponse);
         let analyticsResult = {};
         try {
-          analyticsResult = await analyticsResponse.json();
+          analyticsResult = await readJsonSafely(analyticsResponse);
         } catch (_error) {
           analyticsResult = {};
         }
@@ -118,7 +145,143 @@ function Dashboard({ authUser }) {
     }
 
     fetchMyCampaigns();
-  }, [authUser?.userId]);
+  }, [authUser?.userId, refreshKey]);
+
+  function beginCampaignEdit(campaign) {
+    setCampaignActionError("");
+    setCampaignActionSuccess("");
+    setCampaignBeingEditedId(campaign.campaign_id);
+    setCampaignEditForm({
+      campaign_bio: String(campaign.campaign_bio || ""),
+      body_text: String(campaign.body_text || ""),
+      image: String(campaign.image || ""),
+      goal_amount: String(campaign.goal_amount || ""),
+      deadline: String(campaign.deadline || "").slice(0, 10),
+    });
+  }
+
+  function cancelCampaignEdit() {
+    setCampaignBeingEditedId(null);
+    setCampaignEditForm({
+      campaign_bio: "",
+      body_text: "",
+      image: "",
+      goal_amount: "",
+      deadline: "",
+    });
+  }
+
+  function handleCampaignEditChange(event) {
+    const { name, value } = event.target;
+    setCampaignEditForm((previous) => ({
+      ...previous,
+      [name]: value,
+    }));
+  }
+
+  async function saveCampaignEdit(campaignId) {
+    const userId = Number(authUser?.userId);
+
+    if (!Number.isFinite(userId) || userId <= 0) {
+      setCampaignActionError("Could not determine the signed in user.");
+      return;
+    }
+
+    if (!campaignEditForm.campaign_bio.trim()) {
+      setCampaignActionError("Campaign title is required.");
+      return;
+    }
+
+    const parsedGoalAmount = Number(campaignEditForm.goal_amount);
+    if (!Number.isFinite(parsedGoalAmount) || parsedGoalAmount <= 0) {
+      setCampaignActionError("Goal amount must be a positive number.");
+      return;
+    }
+
+    try {
+      setIsSavingCampaign(true);
+      setCampaignActionError("");
+      setCampaignActionSuccess("");
+
+      const response = await fetch(
+        `${API_PREFIX}/users/${userId}/campaigns/${campaignId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            campaign_bio: campaignEditForm.campaign_bio.trim(),
+            body_text: campaignEditForm.body_text,
+            image: campaignEditForm.image.trim(),
+            goal_amount: parsedGoalAmount,
+            deadline: campaignEditForm.deadline || null,
+          }),
+        },
+      );
+
+      const result = await readJsonSafely(response);
+      if (!response.ok) {
+        throw new Error(result?.error || "Could not save campaign changes.");
+      }
+
+      setCampaignActionSuccess("Campaign updated successfully.");
+      cancelCampaignEdit();
+      setRefreshKey((previous) => previous + 1);
+    } catch (error) {
+      setCampaignActionError(
+        error.message || "Could not save campaign changes.",
+      );
+    } finally {
+      setIsSavingCampaign(false);
+    }
+  }
+
+  async function deleteCampaign(campaignId) {
+    const userId = Number(authUser?.userId);
+
+    if (!Number.isFinite(userId) || userId <= 0) {
+      setCampaignActionError("Could not determine the signed in user.");
+      return;
+    }
+
+    const didConfirmDelete = window.confirm(
+      "Delete this campaign? This action cannot be undone.",
+    );
+
+    if (!didConfirmDelete) {
+      return;
+    }
+
+    try {
+      setIsDeletingCampaignId(campaignId);
+      setCampaignActionError("");
+      setCampaignActionSuccess("");
+
+      const response = await fetch(
+        `${API_PREFIX}/users/${userId}/campaigns/${campaignId}`,
+        {
+          method: "DELETE",
+        },
+      );
+
+      const result = await readJsonSafely(response);
+      if (!response.ok) {
+        throw new Error(result?.error || "Could not delete campaign.");
+      }
+
+      if (campaignBeingEditedId === campaignId) {
+        cancelCampaignEdit();
+      }
+
+      setCampaignActionSuccess("Campaign deleted successfully.");
+      setRefreshKey((previous) => previous + 1);
+    } catch (error) {
+      setCampaignActionError(error.message || "Could not delete campaign.");
+    } finally {
+      setIsDeletingCampaignId(null);
+    }
+  }
 
   function getProgressPercent(amountRaised, goalAmount) {
     const raised = Number(amountRaised) || 0;
@@ -181,7 +344,17 @@ function Dashboard({ authUser }) {
         </article>
 
         <article>
-          <h3>My campaigns</h3>
+          <div className="dashboard-campaign-heading-row">
+            <h3>My campaigns</h3>
+            <Link to="/create" className="dashboard-action-btn">
+              Opret kampagne
+            </Link>
+          </div>
+
+          {campaignActionError && <p className="auth-error">{campaignActionError}</p>}
+          {campaignActionSuccess && (
+            <p className="auth-success">{campaignActionSuccess}</p>
+          )}
 
           {isLoadingCampaigns && <p>Loading your campaigns...</p>}
 
@@ -259,13 +432,102 @@ function Dashboard({ authUser }) {
                         <Link to={campaignPath} className="dashboard-action-btn">
                           Se kampagne
                         </Link>
-                        <Link
-                          to={campaignPath}
+                        <button
+                          type="button"
                           className="dashboard-action-btn dashboard-action-btn-secondary"
+                          onClick={() => beginCampaignEdit(campaign)}
                         >
-                          Administrer
-                        </Link>
+                          Rediger
+                        </button>
+                        <button
+                          type="button"
+                          className="dashboard-action-btn dashboard-action-btn-danger"
+                          disabled={isDeletingCampaignId === campaign.campaign_id}
+                          onClick={() => deleteCampaign(campaign.campaign_id)}
+                        >
+                          {isDeletingCampaignId === campaign.campaign_id
+                            ? "Sletter..."
+                            : "Slet"}
+                        </button>
                       </div>
+
+                      {campaignBeingEditedId === campaign.campaign_id && (
+                        <div className="dashboard-edit-panel">
+                          <label htmlFor={`edit-title-${campaign.campaign_id}`}>
+                            Titel
+                          </label>
+                          <input
+                            id={`edit-title-${campaign.campaign_id}`}
+                            name="campaign_bio"
+                            type="text"
+                            value={campaignEditForm.campaign_bio}
+                            onChange={handleCampaignEditChange}
+                          />
+
+                          <label htmlFor={`edit-description-${campaign.campaign_id}`}>
+                            Beskrivelse
+                          </label>
+                          <textarea
+                            id={`edit-description-${campaign.campaign_id}`}
+                            name="body_text"
+                            rows={4}
+                            value={campaignEditForm.body_text}
+                            onChange={handleCampaignEditChange}
+                          />
+
+                          <label htmlFor={`edit-goal-${campaign.campaign_id}`}>
+                            Goal amount (DKK)
+                          </label>
+                          <input
+                            id={`edit-goal-${campaign.campaign_id}`}
+                            name="goal_amount"
+                            type="number"
+                            min="1"
+                            value={campaignEditForm.goal_amount}
+                            onChange={handleCampaignEditChange}
+                          />
+
+                          <label htmlFor={`edit-image-${campaign.campaign_id}`}>
+                            Billede URL
+                          </label>
+                          <input
+                            id={`edit-image-${campaign.campaign_id}`}
+                            name="image"
+                            type="url"
+                            value={campaignEditForm.image}
+                            onChange={handleCampaignEditChange}
+                          />
+
+                          <label htmlFor={`edit-deadline-${campaign.campaign_id}`}>
+                            Deadline
+                          </label>
+                          <input
+                            id={`edit-deadline-${campaign.campaign_id}`}
+                            name="deadline"
+                            type="date"
+                            value={campaignEditForm.deadline}
+                            onChange={handleCampaignEditChange}
+                          />
+
+                          <div className="dashboard-edit-actions">
+                            <button
+                              type="button"
+                              className="dashboard-action-btn"
+                              disabled={isSavingCampaign}
+                              onClick={() => saveCampaignEdit(campaign.campaign_id)}
+                            >
+                              {isSavingCampaign ? "Gemmer..." : "Gem"}
+                            </button>
+                            <button
+                              type="button"
+                              className="dashboard-action-btn dashboard-action-btn-secondary"
+                              onClick={cancelCampaignEdit}
+                            >
+                              Annuller
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </article>
                 );

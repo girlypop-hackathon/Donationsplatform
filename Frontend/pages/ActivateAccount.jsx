@@ -4,6 +4,20 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 const API_PREFIX = API_BASE_URL ? `${API_BASE_URL}/api` : "/api";
 
+async function readJsonSafely(response) {
+  const rawBody = await response.text();
+
+  if (!rawBody) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(rawBody);
+  } catch (_error) {
+    return {};
+  }
+}
+
 function ActivateAccount({ onLogin }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -49,9 +63,12 @@ function ActivateAccount({ onLogin }) {
         }),
       });
 
-      const result = await response.json();
+      const result = await readJsonSafely(response);
       if (!response.ok || !result?.data?.token || !result?.data?.user) {
-        throw new Error(result?.error || "Could not activate account.");
+        throw new Error(
+          result?.error ||
+            `Could not activate account (HTTP ${response.status}).`,
+        );
       }
 
       await onLogin(result.data.token, result.data.user);

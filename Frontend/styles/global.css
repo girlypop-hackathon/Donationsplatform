@@ -714,6 +714,14 @@ body {
   flex-wrap: wrap;
 }
 
+.dashboard-campaign-heading-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
 .dashboard-action-btn {
   display: inline-block;
   padding: 8px 12px;
@@ -723,10 +731,54 @@ body {
   font-weight: 600;
   background: #0b2eae;
   color: #fff;
+  border: none;
+  cursor: pointer;
 }
 
 .dashboard-action-btn-secondary {
   background: #ea672d;
+}
+
+.dashboard-action-btn-danger {
+  background: #c62828;
+}
+
+.dashboard-action-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.dashboard-edit-panel {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid #e7e7e7;
+  border-radius: 8px;
+  background: #fafafa;
+  display: grid;
+  gap: 6px;
+}
+
+.dashboard-edit-panel label {
+  font-size: 13px;
+  color: #2d3550;
+  font-weight: 600;
+}
+
+.dashboard-edit-panel input,
+.dashboard-edit-panel textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #d4d9e2;
+  border-radius: 8px;
+  padding: 9px 10px;
+  font-size: 14px;
+}
+
+.dashboard-edit-actions {
+  margin-top: 6px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .dashboard-analytics-grid {

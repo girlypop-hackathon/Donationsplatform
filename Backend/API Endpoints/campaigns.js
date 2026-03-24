@@ -174,6 +174,7 @@ router.post("/api/campaigns", async (req, res) => {
     milestone_1,
     milestone_2,
     milestone_3,
+    deadline,
     creator_name,
     creator_email,
   } = req.body;
@@ -255,6 +256,170 @@ router.post("/api/campaigns", async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 });
+
+// PUT update campaign by owner
+router.put("/api/users/:userId/campaigns/:campaignId", async (request, response) => {
+  try {
+    const userId = Number(request.params.userId);
+    const campaignId = Number(request.params.campaignId);
+
+    if (!Number.isFinite(userId) || userId <= 0) {
+      response.status(400).json({ success: false, error: "Valid user id is required" });
+      return;
+    }
+
+    if (!Number.isFinite(campaignId) || campaignId <= 0) {
+      response.status(400).json({ success: false, error: "Valid campaign id is required" });
+      return;
+    }
+
+    const existingCampaign = await getSingleRow(
+      "SELECT * FROM campaigns WHERE campaign_id = ?",
+      [campaignId],
+    );
+
+    if (!existingCampaign) {
+      response.status(404).json({ success: false, error: "Campaign not found" });
+      return;
+    }
+
+    if (Number(existingCampaign.created_by_user_id) !== userId) {
+      response
+        .status(403)
+        .json({ success: false, error: "You are not allowed to edit this campaign" });
+      return;
+    }
+
+    const nextCampaignBio = String(
+      request.body.campaign_bio ?? existingCampaign.campaign_bio ?? "",
+    ).trim();
+    const nextBodyText = String(
+      request.body.body_text ?? existingCampaign.body_text ?? "",
+    ).trim();
+    const nextImage = String(request.body.image ?? existingCampaign.image ?? "").trim();
+    const nextDeadline = String(request.body.deadline ?? existingCampaign.deadline ?? "").trim();
+
+    const parsedGoalAmount = Number(
+      request.body.goal_amount ?? existingCampaign.goal_amount ?? 0,
+    );
+    if (!Number.isFinite(parsedGoalAmount) || parsedGoalAmount <= 0) {
+      response
+        .status(400)
+        .json({ success: false, error: "goal_amount must be a positive number" });
+      return;
+    }
+
+    if (!nextCampaignBio) {
+      response
+        .status(400)
+        .json({ success: false, error: "campaign_bio is required" });
+      return;
+    }
+
+    const parsedProviderId = Number(
+      request.body.provider_id ?? existingCampaign.provider_id,
+    );
+    const nextProviderId = Number.isFinite(parsedProviderId) && parsedProviderId > 0
+      ? parsedProviderId
+      : existingCampaign.provider_id;
+
+    const milestoneOne = request.body.milestone_1 ?? existingCampaign.milestone_1 ?? null;
+    const milestoneTwo = request.body.milestone_2 ?? existingCampaign.milestone_2 ?? null;
+    const milestoneThree = request.body.milestone_3 ?? existingCampaign.milestone_3 ?? null;
+
+    await runQuery(
+      `UPDATE campaigns
+       SET provider_id = ?,
+           image = ?,
+           campaign_bio = ?,
+           body_text = ?,
+           goal_amount = ?,
+           milestone_1 = ?,
+           milestone_2 = ?,
+           milestone_3 = ?,
+           deadline = ?
+       WHERE campaign_id = ?`,
+      [
+        nextProviderId,
+        nextImage,
+        nextCampaignBio,
+        nextBodyText,
+        parsedGoalAmount,
+        milestoneOne,
+        milestoneTwo,
+        milestoneThree,
+        nextDeadline || null,
+        campaignId,
+      ],
+    );
+
+    const updatedCampaign = await getSingleRow(queries.getCampaignWithProviderName, [
+      campaignId,
+    ]);
+
+    response.json({
+      success: true,
+      data: updatedCampaign,
+    });
+  } catch (error) {
+    response.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// DELETE campaign by owner
+router.delete(
+  "/api/users/:userId/campaigns/:campaignId",
+  async (request, response) => {
+    try {
+      const userId = Number(request.params.userId);
+      const campaignId = Number(request.params.campaignId);
+
+      if (!Number.isFinite(userId) || userId <= 0) {
+        response.status(400).json({ success: false, error: "Valid user id is required" });
+        return;
+      }
+
+      if (!Number.isFinite(campaignId) || campaignId <= 0) {
+        response.status(400).json({ success: false, error: "Valid campaign id is required" });
+        return;
+      }
+
+      const existingCampaign = await getSingleRow(
+        "SELECT campaign_id, created_by_user_id FROM campaigns WHERE campaign_id = ?",
+        [campaignId],
+      );
+
+      if (!existingCampaign) {
+        response.status(404).json({ success: false, error: "Campaign not found" });
+        return;
+      }
+
+      if (Number(existingCampaign.created_by_user_id) !== userId) {
+        response
+          .status(403)
+          .json({ success: false, error: "You are not allowed to delete this campaign" });
+        return;
+      }
+
+      await runQuery("DELETE FROM campaign_events WHERE campaign_id = ?", [campaignId]);
+      await runQuery("DELETE FROM donations WHERE campaign_id = ?", [campaignId]);
+
+      const deleteResult = await runQuery(
+        "DELETE FROM campaigns WHERE campaign_id = ? AND created_by_user_id = ?",
+        [campaignId, userId],
+      );
+
+      if (!deleteResult.changes) {
+        response.status(404).json({ success: false, error: "Campaign not found" });
+        return;
+      }
+
+      response.json({ success: true, data: { campaignId } });
+    } catch (error) {
+      response.status(500).json({ success: false, error: error.message });
+    }
+  },
+);
 
 function runQuery(queryText, queryParams = []) {
   return new Promise((resolve, reject) => {
