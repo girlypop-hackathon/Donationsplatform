@@ -47,10 +47,12 @@ const db = new sqlite3.Database(databasePath, (err) => {
     ensureProviderIdColumn(() => {
       ensureAmountRaisedColumn(() => {
         ensureCampaignDeadlineColumn(() => {
-          ensureDonationCreatedAtColumn(() => {
-            ensureUsersTable(() => {
-              ensureUserLinkColumns(() => {
-                ensureActivationTokensTable();
+          ensureCampaignCategoryColumn(() => {
+            ensureDonationCreatedAtColumn(() => {
+              ensureUsersTable(() => {
+                ensureUserLinkColumns(() => {
+                  ensureActivationTokensTable();
+                });
               });
             });
           });
@@ -169,6 +171,48 @@ function ensureCampaignDeadlineColumn(onDone) {
         console.error("Could not add campaigns.deadline column:", alterErr.message);
       }
       if (onDone) onDone();
+    });
+  });
+}
+
+function ensureCampaignCategoryColumn(onDone) {
+  db.all("PRAGMA table_info(campaigns)", [], (err, columns) => {
+    if (err) {
+      console.error("Could not inspect campaigns table for category:", err.message);
+      if (onDone) onDone();
+      return;
+    }
+
+    if (columns.length === 0) {
+      if (onDone) onDone();
+      return;
+    }
+
+    const hasCategory = columns.some((column) => column.name === "category");
+    if (hasCategory) {
+      if (onDone) onDone();
+      return;
+    }
+
+    db.run("ALTER TABLE campaigns ADD COLUMN category TEXT", (alterErr) => {
+      if (alterErr) {
+        console.error("Could not add campaigns.category column:", alterErr.message);
+        if (onDone) onDone();
+        return;
+      }
+
+      db.run(
+        "UPDATE campaigns SET category = 'Other' WHERE category IS NULL OR TRIM(category) = ''",
+        (updateErr) => {
+          if (updateErr) {
+            console.error(
+              "Could not backfill campaigns.category values:",
+              updateErr.message,
+            );
+          }
+          if (onDone) onDone();
+        },
+      );
     });
   });
 }

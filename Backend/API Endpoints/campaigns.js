@@ -168,6 +168,7 @@ router.post("/api/campaigns", async (req, res) => {
     provider_id,
     provider_name,
     is_private_provider,
+    category,
     image,
     campaign_bio,
     body_text,
@@ -220,6 +221,7 @@ router.post("/api/campaigns", async (req, res) => {
     const insertResult = await runQuery(
       `INSERT INTO campaigns (
         provider_id,
+        category,
         image,
         campaign_bio,
         body_text,
@@ -230,9 +232,10 @@ router.post("/api/campaigns", async (req, res) => {
         milestone_3,
         deadline,
         created_by_user_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         resolvedProviderId,
+        String(category || "").trim() || "Other",
         image,
         campaign_bio,
         body_text,
@@ -255,6 +258,7 @@ router.post("/api/campaigns", async (req, res) => {
       data: {
         campaign_id: insertResult.lastId,
         provider_id: resolvedProviderId,
+        category: String(category || "").trim() || "Other",
         image,
         campaign_bio,
         body_text,
@@ -363,6 +367,9 @@ router.put("/api/users/:userId/campaigns/:campaignId", async (request, response)
     ).trim();
     const nextImage = String(request.body.image ?? existingCampaign.image ?? "").trim();
     const nextDeadline = String(request.body.deadline ?? existingCampaign.deadline ?? "").trim();
+    const nextCategory = String(
+      request.body.category ?? existingCampaign.category ?? "Other",
+    ).trim() || "Other";
 
     const parsedGoalAmount = Number(
       request.body.goal_amount ?? existingCampaign.goal_amount ?? 0,
@@ -402,7 +409,8 @@ router.put("/api/users/:userId/campaigns/:campaignId", async (request, response)
            milestone_1 = ?,
            milestone_2 = ?,
            milestone_3 = ?,
-           deadline = ?
+           deadline = ?,
+           category = ?
        WHERE campaign_id = ?`,
       [
         nextProviderId,
@@ -414,6 +422,7 @@ router.put("/api/users/:userId/campaigns/:campaignId", async (request, response)
         milestoneTwo,
         milestoneThree,
         nextDeadline || null,
+        nextCategory,
         campaignId,
       ],
     );
