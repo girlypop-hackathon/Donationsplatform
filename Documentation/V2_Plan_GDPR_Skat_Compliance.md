@@ -274,6 +274,102 @@ Definition of done for skalerbarheds-spor:
 - SLO/SLA er aftalt og monitoreret
 - Incident- og rollback-procedurer er testet i oefelse
 
+## 4.6 Pædagogisk forklaring (studenter-version)
+Formaal:
+- Gøre det tydeligt, hvad I konkret skal gøre fra V1 til V2, i simpel form.
+
+Kort forklaring:
+- V1 fungerer fint i lille skala, men naar mange brugere kommer samtidig (hele EU), bliver nogle dele presset.
+- Derfor skalerer man i lag: først de lette gevinster (CDN, cache, flere API-instanser), derefter mere avancerede greb (events, service-opdeling).
+- Maalet er ikke at bygge alt nyt paa en gang, men at fjerne de stoerste flaskehalse trin for trin.
+
+### 4.6.1 Hvad er en flaskehals? (simpelt)
+En flaskehals er den del, der bliver langsom foerst og holder resten tilbage.
+
+Typiske flaskehalse hos jer:
+- Databasen ved mange samtidige donationer
+- API-kald til eksterne systemer (betaling, e-mail)
+- Billeder/medier uden CDN
+
+Tommelfingerregel:
+- Hvis CPU, DB-forbindelser eller svartid topper i spikes, er det tegn paa flaskehals.
+
+### 4.6.2 Hvad skalerer nemt, og hvad er svaert?
+Skalerer nemt (horisontalt):
+- Flere identiske API-servere bag load balancer
+- Flere worker-processer til baggrundsjob
+- Frontend-assets via CDN
+
+Svaert at skalere trivielt:
+- Den primære database med konsistente writes
+- Betalingsflow, afstemning og revisionsspor (skal vaere korrekte)
+
+Hvorfor svaert?
+- Fordi data skal vaere 100% korrekt, ikke bare hurtig.
+
+### 4.6.3 Hvornar giver teknologierne mening?
+CDN:
+- Bruges tidligt. Hurtig effekt, lav risiko.
+
+Caching:
+- Bruges paa laesedata, fx kampagnesider.
+- Undgaa cache paa kritiske betalingsdata uden klar strategi.
+
+Event-driven:
+- Bruges naar noget ikke skal ske synkront med det samme, fx e-mailkvittering.
+- Giver robusthed ved trafikspidser.
+
+Microservices:
+- Bruges senere, naar I kender jeres hotspots.
+- Start ikke her, hvis teamet er lille og domaener stadig er taet koblet.
+
+### 4.6.4 Hvad er trade-offs?
+I faar:
+- Bedre skalerbarhed
+- Mere robusthed
+
+I betaler med:
+- Mere kompleks drift
+- Svaerere fejlfinding
+- Flere ting at monitorere
+
+Praktisk pointe:
+- Distribueret arkitektur er ikke gratis. Gaa kun videre, hvis gevinsten er stoerre end driftsomkostningen.
+
+### 4.6.5 Hvordan holder I systemet online under overgangen?
+Enkel strategi:
+1. Lav sma, bagudkompatible ændringer.
+2. Deploy ofte med feature flags.
+3. Rul gradvist ud (canary/blue-green).
+4. Overvag fejlrate og latency.
+5. Rul tilbage automatisk ved problemer.
+
+Databasen under migration:
+- Udvid schema foerst
+- Flyt data i baggrunden
+- Fjern gammelt schema til sidst
+
+Det er saadan I undgaar planlagt nedetid.
+
+### 4.6.6 V2-arkitektur forklaret i 6 lag
+1. Edge-lag: CDN, WAF, TLS, rate limits
+2. Adgangslag: API gateway + auth
+3. Forretningslag: kampagner, donationer, notifikationer, rapportering
+4. Event-lag: koer og event bus til async arbejde
+5. Datalag: transaktions-DB, read-modeller, object storage, audit logs
+6. Driftslag: CI/CD, monitorering, secrets, incident runbooks
+
+Huskeregel:
+- "Hurtig levering i kanten, korrekt data i kernen, robust drift omkring det hele."
+
+### 4.6.7 Konkrete naeste skridt for jer (student edition)
+1. Maal V1 nu: svartid, fejlrate, DB-load, throughput.
+2. Indfoer CDN + cache paa offentlige laesesider.
+3. Gør API stateless og skaler med flere instanser.
+4. Flyt ikke-kritiske sideeffekter til ko/worker.
+5. Lav CI/CD med canary eller blue-green + rollback.
+6. Evaluer om microservices stadig er noedvendigt efter disse gevinster.
+
 ## 5. Faseplan (foerste udkast)
 ## Fase 0: Afklaring (1-2 uger)
 - Scope laases
