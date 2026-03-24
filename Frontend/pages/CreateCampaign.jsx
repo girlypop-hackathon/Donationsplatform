@@ -101,7 +101,11 @@ function CreateCampaign() {
       String(formData.provider_name || "").trim(),
     );
 
-    if (!formData.use_private_provider && !hasSelectedExistingProvider && !hasCustomOrganizationName) {
+    if (
+      !formData.use_private_provider &&
+      !hasSelectedExistingProvider &&
+      !hasCustomOrganizationName
+    ) {
       setError(
         "Choose an existing organization, choose Private, or enter your own organization name.",
       );

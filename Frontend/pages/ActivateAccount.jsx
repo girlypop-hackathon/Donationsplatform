@@ -27,7 +27,10 @@ async function readJsonSafely(response) {
 function ActivateAccount({ onLogin }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const token = useMemo(() => String(searchParams.get("token") || ""), [searchParams]);
+  const token = useMemo(
+    () => String(searchParams.get("token") || ""),
+    [searchParams],
+  );
 
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");

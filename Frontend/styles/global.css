@@ -336,7 +336,9 @@ body {
   font-weight: 700;
   font-size: 18px;
   box-shadow: 0 8px 18px rgba(234, 103, 45, 0.28);
-  transition: transform 0.18s ease, box-shadow 0.18s ease,
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
     background-color 0.18s ease;
 }
 
@@ -827,7 +829,9 @@ body {
   border-radius: 10px;
   overflow: hidden;
   background: #fff;
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
 .dashboard-campaign-card:hover {
@@ -1132,7 +1136,7 @@ body {
 
 .payment-page h1 {
   margin-top: 0;
-  color: #0B2EAE;
+  color: #0b2eae;
 }
 
 .payment-form {
@@ -1146,9 +1150,9 @@ body {
   margin-bottom: 2px;
 }
 
-.payment-form input[type='text'],
-.payment-form input[type='email'],
-.payment-form input[type='number'] {
+.payment-form input[type="text"],
+.payment-form input[type="email"],
+.payment-form input[type="number"] {
   width: 100%;
   box-sizing: border-box;
   border: 1px solid #ddd;
@@ -1158,7 +1162,7 @@ body {
 
 .payment-form input:focus {
   outline: none;
-  border-color: #0B2EAE;
+  border-color: #0b2eae;
   box-shadow: 0 0 0 2px rgba(11, 46, 174, 0.1);
 }
 
@@ -1170,7 +1174,7 @@ body {
   margin: 2px 0;
 }
 
-.payment-checkbox input[type='checkbox'] {
+.payment-checkbox input[type="checkbox"] {
   width: auto;
 }
 
@@ -1192,12 +1196,12 @@ body {
   margin-top: 8px;
 }
 
-.payment-checkbox input[type='radio'] {
+.payment-checkbox input[type="radio"] {
   width: auto;
 }
 
 .payment-frequency-highlight {
-  border-color: #0B2EAE;
+  border-color: #0b2eae;
   box-shadow: 0 8px 18px rgba(11, 46, 174, 0.12);
 }
 
@@ -1215,7 +1219,10 @@ body {
   border: 1px solid #cbd5e1;
   border-radius: 10px;
   background: #ffffff;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
 }
 
 .payment-frequency-option + .payment-frequency-option {
@@ -1223,7 +1230,7 @@ body {
 }
 
 .payment-frequency-option:hover {
-  border-color: #0B2EAE;
+  border-color: #0b2eae;
   box-shadow: 0 6px 14px rgba(11, 46, 174, 0.08);
   transform: translateY(-1px);
 }
@@ -1262,7 +1269,7 @@ body {
   border: none;
   border-radius: 8px;
   padding: 12px 18px;
-  background: #EA672D;
+  background: #ea672d;
   color: #fff;
   font-weight: 700;
   font-size: 1rem;
@@ -1275,7 +1282,7 @@ body {
 }
 
 .payment-back-link {
-  color: #0B2EAE;
+  color: #0b2eae;
   text-decoration: none;
   font-weight: 600;
 }
@@ -1288,7 +1295,7 @@ body {
 }
 
 .payment-privacy-link {
-  color: #0B2EAE;
+  color: #0b2eae;
   font-weight: 600;
   text-decoration: underline;
 }
@@ -1301,7 +1308,7 @@ body {
 
 .info-page h1 {
   margin-top: 0;
-  color: #0B2EAE;
+  color: #0b2eae;
 }
 
 .info-card {

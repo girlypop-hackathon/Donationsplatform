@@ -1,7 +1,7 @@
 /*
 Oprettet: 22-03-2026
 Oprettet af: Føen og Codex
-Beskrivelse: Profile page. Displays user profile information, a form to edit the user's name and email, and handles form submission to update the user's profile via the API. 
+Beskrivelse: Profile page. Displays user profile information, a form to edit the user's name and email, and handles form submission to update the user's profile via the API.
 Fetches the current user's profile data on component mount and updates the form fields accordingly.
 */
 

@@ -150,7 +150,10 @@ function ensureProviderIdColumn(onDone) {
 function ensureCampaignDeadlineColumn(onDone) {
   db.all("PRAGMA table_info(campaigns)", [], (err, columns) => {
     if (err) {
-      console.error("Could not inspect campaigns table for deadline:", err.message);
+      console.error(
+        "Could not inspect campaigns table for deadline:",
+        err.message,
+      );
       if (onDone) onDone();
       return;
     }
@@ -168,7 +171,10 @@ function ensureCampaignDeadlineColumn(onDone) {
 
     db.run("ALTER TABLE campaigns ADD COLUMN deadline TEXT", (alterErr) => {
       if (alterErr) {
-        console.error("Could not add campaigns.deadline column:", alterErr.message);
+        console.error(
+          "Could not add campaigns.deadline column:",
+          alterErr.message,
+        );
       }
       if (onDone) onDone();
     });
@@ -178,7 +184,10 @@ function ensureCampaignDeadlineColumn(onDone) {
 function ensureCampaignCategoryColumn(onDone) {
   db.all("PRAGMA table_info(campaigns)", [], (err, columns) => {
     if (err) {
-      console.error("Could not inspect campaigns table for category:", err.message);
+      console.error(
+        "Could not inspect campaigns table for category:",
+        err.message,
+      );
       if (onDone) onDone();
       return;
     }
@@ -196,7 +205,10 @@ function ensureCampaignCategoryColumn(onDone) {
 
     db.run("ALTER TABLE campaigns ADD COLUMN category TEXT", (alterErr) => {
       if (alterErr) {
-        console.error("Could not add campaigns.category column:", alterErr.message);
+        console.error(
+          "Could not add campaigns.category column:",
+          alterErr.message,
+        );
         if (onDone) onDone();
         return;
       }
@@ -297,28 +309,29 @@ function ensureDonationCreatedAtColumn(onDone) {
       return;
     }
 
-    db.run(
-      "ALTER TABLE donations ADD COLUMN created_at TEXT",
-      (alterErr) => {
-        if (alterErr) {
-          console.error("Could not add donations.created_at column:", alterErr.message);
-          if (onDone) onDone();
-          return;
-        }
+    db.run("ALTER TABLE donations ADD COLUMN created_at TEXT", (alterErr) => {
+      if (alterErr) {
+        console.error(
+          "Could not add donations.created_at column:",
+          alterErr.message,
+        );
+        if (onDone) onDone();
+        return;
+      }
 
-        db.run(
-          `UPDATE donations
+      db.run(
+        `UPDATE donations
            SET created_at = CURRENT_TIMESTAMP
            WHERE created_at IS NULL OR TRIM(created_at) = ''`,
-          (updateErr) => {
-            if (updateErr) {
-              console.error(
-                "Could not backfill donations.created_at values:",
-                updateErr.message,
-              );
-            }
-            db.run(
-              `CREATE TRIGGER IF NOT EXISTS donations_set_created_at
+        (updateErr) => {
+          if (updateErr) {
+            console.error(
+              "Could not backfill donations.created_at values:",
+              updateErr.message,
+            );
+          }
+          db.run(
+            `CREATE TRIGGER IF NOT EXISTS donations_set_created_at
                AFTER INSERT ON donations
                FOR EACH ROW
                WHEN NEW.created_at IS NULL OR TRIM(NEW.created_at) = ''
@@ -327,21 +340,20 @@ function ensureDonationCreatedAtColumn(onDone) {
                  SET created_at = CURRENT_TIMESTAMP
                  WHERE donation_id = NEW.donation_id;
                END;`,
-              (triggerErr) => {
-                if (triggerErr) {
-                  console.error(
-                    "Could not ensure donations_set_created_at trigger:",
-                    triggerErr.message,
-                  );
-                }
+            (triggerErr) => {
+              if (triggerErr) {
+                console.error(
+                  "Could not ensure donations_set_created_at trigger:",
+                  triggerErr.message,
+                );
+              }
 
-                if (onDone) onDone();
-              },
-            );
-          },
-        );
-      },
-    );
+              if (onDone) onDone();
+            },
+          );
+        },
+      );
+    });
   });
 }
 
@@ -375,7 +387,10 @@ function ensureUserLinkColumns(onDone) {
       [],
       (tablesError, tableRows) => {
         if (tablesError) {
-          console.error("Could not inspect tables for user links:", tablesError.message);
+          console.error(
+            "Could not inspect tables for user links:",
+            tablesError.message,
+          );
           if (onDone) onDone();
           return;
         }
@@ -394,28 +409,31 @@ function ensureUserLinkColumns(onDone) {
           return;
         }
 
-        db.all("PRAGMA table_info(donations)", [], (donationTableError, columns) => {
-      if (donationTableError) {
-        console.error(
-          "Could not inspect donations table for user_id:",
-          donationTableError.message,
-        );
-          } else if (!columns.some((column) => column.name === "user_id")) {
-            db.run(
-              "ALTER TABLE donations ADD COLUMN user_id INTEGER",
-              (alterError) => {
-                if (alterError) {
-                  console.error(
-                    "Could not add user_id to donations:",
-                    alterError.message,
-                  );
-                }
-              },
-            );
-          }
+        db.all(
+          "PRAGMA table_info(donations)",
+          [],
+          (donationTableError, columns) => {
+            if (donationTableError) {
+              console.error(
+                "Could not inspect donations table for user_id:",
+                donationTableError.message,
+              );
+            } else if (!columns.some((column) => column.name === "user_id")) {
+              db.run(
+                "ALTER TABLE donations ADD COLUMN user_id INTEGER",
+                (alterError) => {
+                  if (alterError) {
+                    console.error(
+                      "Could not add user_id to donations:",
+                      alterError.message,
+                    );
+                  }
+                },
+              );
+            }
 
-          db.run(
-            `UPDATE donations
+            db.run(
+              `UPDATE donations
          SET user_id = (
            SELECT users.user_id
            FROM users
@@ -425,18 +443,19 @@ function ensureUserLinkColumns(onDone) {
          WHERE user_id IS NULL
            AND email IS NOT NULL
            AND TRIM(email) != ''`,
-            (backfillDonationError) => {
-              if (backfillDonationError) {
-                console.error(
-                  "Could not backfill donations.user_id:",
-                  backfillDonationError.message,
-                );
-              }
+              (backfillDonationError) => {
+                if (backfillDonationError) {
+                  console.error(
+                    "Could not backfill donations.user_id:",
+                    backfillDonationError.message,
+                  );
+                }
 
-              finalizeCampaignColumnUpdate(hasCampaignsTable, onDone);
-            },
-          );
-        });
+                finalizeCampaignColumnUpdate(hasCampaignsTable, onDone);
+              },
+            );
+          },
+        );
       },
     );
   });
@@ -448,34 +467,40 @@ function finalizeCampaignColumnUpdate(hasCampaignsTable, onDone) {
     return;
   }
 
-  db.all("PRAGMA table_info(campaigns)", [], (campaignTableError, campaignColumns) => {
-    if (campaignTableError) {
-      console.error(
-        "Could not inspect campaigns table for created_by_user_id:",
-        campaignTableError.message,
-      );
+  db.all(
+    "PRAGMA table_info(campaigns)",
+    [],
+    (campaignTableError, campaignColumns) => {
+      if (campaignTableError) {
+        console.error(
+          "Could not inspect campaigns table for created_by_user_id:",
+          campaignTableError.message,
+        );
+        if (onDone) onDone();
+        return;
+      }
+
+      if (
+        !campaignColumns.some((column) => column.name === "created_by_user_id")
+      ) {
+        db.run(
+          "ALTER TABLE campaigns ADD COLUMN created_by_user_id INTEGER",
+          (alterCampaignError) => {
+            if (alterCampaignError) {
+              console.error(
+                "Could not add created_by_user_id to campaigns:",
+                alterCampaignError.message,
+              );
+            }
+            if (onDone) onDone();
+          },
+        );
+        return;
+      }
+
       if (onDone) onDone();
-      return;
-    }
-
-    if (!campaignColumns.some((column) => column.name === "created_by_user_id")) {
-      db.run(
-        "ALTER TABLE campaigns ADD COLUMN created_by_user_id INTEGER",
-        (alterCampaignError) => {
-          if (alterCampaignError) {
-            console.error(
-              "Could not add created_by_user_id to campaigns:",
-              alterCampaignError.message,
-            );
-          }
-          if (onDone) onDone();
-        },
-      );
-      return;
-    }
-
-    if (onDone) onDone();
-  });
+    },
+  );
 }
 
 function ensureActivationTokensTable(onDone) {
@@ -491,7 +516,10 @@ function ensureActivationTokensTable(onDone) {
     )`,
     (error) => {
       if (error) {
-        console.error("Could not ensure user_activation_tokens table:", error.message);
+        console.error(
+          "Could not ensure user_activation_tokens table:",
+          error.message,
+        );
         if (onDone) onDone();
         return;
       }
@@ -605,13 +633,18 @@ function normalizeActivationTokenInput(rawTokenInput) {
   }
 
   // Remove wrapping quotes/angle brackets commonly added by terminals or mail clients.
-  normalizedTokenValue = normalizedTokenValue.replace(/^['"<\s]+|['">\s]+$/g, "");
+  normalizedTokenValue = normalizedTokenValue.replace(
+    /^['"<\s]+|['">\s]+$/g,
+    "",
+  );
 
   // If a full URL is provided instead of raw token, extract token query value.
   if (normalizedTokenValue.includes("token=")) {
     try {
       const parsedUrl = new URL(normalizedTokenValue);
-      const tokenFromQuery = String(parsedUrl.searchParams.get("token") || "").trim();
+      const tokenFromQuery = String(
+        parsedUrl.searchParams.get("token") || "",
+      ).trim();
       if (tokenFromQuery) {
         normalizedTokenValue = tokenFromQuery;
       }
@@ -969,7 +1002,8 @@ app.post("/api/auth/activate", async (request, response) => {
     if (!tokenRow) {
       response.status(400).json({
         success: false,
-        error: "Activation token is invalid. Request a new activation link and try again.",
+        error:
+          "Activation token is invalid. Request a new activation link and try again.",
       });
       return;
     }
@@ -1016,9 +1050,10 @@ app.post("/api/auth/activate", async (request, response) => {
       [tokenRow.user_id],
     );
 
-    const userRow = await getSingleRow("SELECT * FROM users WHERE user_id = ?", [
-      tokenRow.user_id,
-    ]);
+    const userRow = await getSingleRow(
+      "SELECT * FROM users WHERE user_id = ?",
+      [tokenRow.user_id],
+    );
 
     const jwtToken = jwt.sign(
       {
@@ -1169,10 +1204,11 @@ app.put("/api/auth/profile", async (request, response) => {
       return;
     }
 
-    await runQuery(
-      "UPDATE users SET name = ?, email = ? WHERE user_id = ?",
-      [nextName, nextEmail, currentUser.user_id],
-    );
+    await runQuery("UPDATE users SET name = ?, email = ? WHERE user_id = ?", [
+      nextName,
+      nextEmail,
+      currentUser.user_id,
+    ]);
 
     const updatedUser = await getSingleRow(
       "SELECT * FROM users WHERE user_id = ?",

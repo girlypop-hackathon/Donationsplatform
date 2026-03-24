@@ -1,4 +1,4 @@
-You must follow these guidelines: 
+You must follow these guidelines:
 
 Create short and precise summaries of the code you have written.
 
@@ -15,8 +15,8 @@ Can you in the end explain how i can test the new functionality you have created
 If you create big changes you need my approval first
 
 Make a comment in the top all files following this format:
-/*
+/_
 Oprettet: (Date created)
 Af: Navn og Navn på AI (GPT-5.3-codex)
 Beskrivelse: API endpoints for the donation platform
-*/
+_/

@@ -124,10 +124,10 @@ function CampaignPage() {
     navigate(
       `/campaign/${id}/payment?amount=${selectedAmount}&frequency=${donationFrequency}`,
       {
-      state: {
-        amount: selectedAmount,
-        donationFrequency,
-      },
+        state: {
+          amount: selectedAmount,
+          donationFrequency,
+        },
       },
     );
   }
@@ -149,14 +149,17 @@ function CampaignPage() {
   return (
     <div className="campaign-page">
       <img
-        src={resolveCampaignImageSource(campaign.image, "fundtogether-logo.png")}
+        src={resolveCampaignImageSource(
+          campaign.image,
+          "fundtogether-logo.png",
+        )}
         alt={campaign.campaign_bio || "campaign"}
         onError={(event) => {
           applyImageFallbackOnce(
             event,
             FALLBACK_IMAGE_URL,
             BACKUP_FALLBACK_IMAGE_URL,
-          )
+          );
         }}
       />
       <h1>{`${campaign.campaign_bio}`}</h1>
@@ -168,7 +171,8 @@ function CampaignPage() {
 
       {campaign.deadline && (
         <p className="campaign-deadline">
-          Campaign deadline: {new Date(campaign.deadline).toLocaleDateString('da-DK')}
+          Campaign deadline:{" "}
+          {new Date(campaign.deadline).toLocaleDateString("da-DK")}
         </p>
       )}
 
@@ -177,7 +181,11 @@ function CampaignPage() {
 
       <div className="donation-box">
         <h3>Donate</h3>
-        <div className="donation-frequency-buttons" role="radiogroup" aria-label="Payment type">
+        <div
+          className="donation-frequency-buttons"
+          role="radiogroup"
+          aria-label="Payment type"
+        >
           <button
             type="button"
             className={`preset-btn donation-type-btn ${donationFrequency === DONATION_FREQUENCIES.ONE_TIME ? "active" : ""}`}
@@ -227,11 +235,11 @@ function CampaignPage() {
           <p className="selected-donation">{`Selected donation: ${selectedAmount} DKK`}</p>
         )}
 
-        <button 
-        type="button" 
-        disabled={!hasValidAmount}
-        onClick={handleDonate}
-        id="continue-to-payment-btn"
+        <button
+          type="button"
+          disabled={!hasValidAmount}
+          onClick={handleDonate}
+          id="continue-to-payment-btn"
         >
           Continue to payment
         </button>

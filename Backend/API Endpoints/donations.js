@@ -7,9 +7,9 @@ Beskrivelse: API endpoints for donations including anonymous donor handling
 // Handles all donation-related operations including user management, email notifications, and milestone processing
 */
 
-const express = require('express')
-const queries = require('../queries')
-const emailService = require('../emailService')
+const express = require("express");
+const queries = require("../queries");
+const emailService = require("../emailService");
 
 const router = express.Router();
 
@@ -26,44 +26,54 @@ function setAuthHelpers(helpers) {
 }
 
 // Normalizes campaign donation payload and overwrites personal fields for anonymous donations.
-function buildCampaignDonationRecord (requestBody) {
-  const isAnonymousDonation = Boolean(requestBody?.anonymous_donation)
-  const anonymousValue = 'Anonymous'
+function buildCampaignDonationRecord(requestBody) {
+  const isAnonymousDonation = Boolean(requestBody?.anonymous_donation);
+  const anonymousValue = "Anonymous";
 
   return {
-    userName: isAnonymousDonation ? anonymousValue : (requestBody?.user_name || anonymousValue),
-    email: isAnonymousDonation ? anonymousValue : (requestBody?.email || ''),
-    accountNumber: isAnonymousDonation ? anonymousValue : (requestBody?.account_number || ''),
-    isSubscription: isAnonymousDonation ? false : Boolean(requestBody?.is_subscription),
-    generalNewsletter: isAnonymousDonation ? false : Boolean(requestBody?.general_newsletter),
-    isAnonymousDonation
-  }
+    userName: isAnonymousDonation
+      ? anonymousValue
+      : requestBody?.user_name || anonymousValue,
+    email: isAnonymousDonation ? anonymousValue : requestBody?.email || "",
+    accountNumber: isAnonymousDonation
+      ? anonymousValue
+      : requestBody?.account_number || "",
+    isSubscription: isAnonymousDonation
+      ? false
+      : Boolean(requestBody?.is_subscription),
+    generalNewsletter: isAnonymousDonation
+      ? false
+      : Boolean(requestBody?.general_newsletter),
+    isAnonymousDonation,
+  };
 }
 
 // Validates whether an email value is deliverable for outbound mail.
-function hasDeliverableEmailAddress (emailAddress) {
-  const normalizedEmailAddress = String(emailAddress || '').trim()
-  return normalizedEmailAddress.includes('@')
+function hasDeliverableEmailAddress(emailAddress) {
+  const normalizedEmailAddress = String(emailAddress || "").trim();
+  return normalizedEmailAddress.includes("@");
 }
 
 // Inserts donation, sends tiered thank-you flow, and triggers milestone or goal notifications.
-async function processDonationAndEmailFlow (donationInput) {
-  const donationValidationError = validateDonationInput(donationInput)
+async function processDonationAndEmailFlow(donationInput) {
+  const donationValidationError = validateDonationInput(donationInput);
   if (donationValidationError) {
     return {
       success: false,
       statusCode: 400,
-      error: donationValidationError
-    }
+      error: donationValidationError,
+    };
   }
 
-  const campaignRow = await getSingleRow(queries.getCampaignWithProviderName, [donationInput.campaignId])
+  const campaignRow = await getSingleRow(queries.getCampaignWithProviderName, [
+    donationInput.campaignId,
+  ]);
   if (!campaignRow) {
     return {
       success: false,
       statusCode: 404,
-      error: 'Campaign not found'
-    }
+      error: "Campaign not found",
+    };
   }
 
   const donationInsertResult = await runQuery(queries.insertDonation, [
@@ -74,47 +84,54 @@ async function processDonationAndEmailFlow (donationInput) {
     donationInput.accountNumber,
     donationInput.campaignUpdatesOptIn ? 1 : 0,
     donationInput.amount,
-    donationInput.newsletterOptIn ? 1 : 0
-  ])
+    donationInput.newsletterOptIn ? 1 : 0,
+  ]);
 
-  const donationTier = emailService.getDonationTierByAmount(donationInput.amount)
+  const donationTier = emailService.getDonationTierByAmount(
+    donationInput.amount,
+  );
 
   if (hasDeliverableEmailAddress(donationInput.email)) {
     const thankYouEmailContent = emailService.buildThankYouEmailForTier({
       donorName: donationInput.userName,
       campaignBio: campaignRow.campaign_bio,
       donationAmount: donationInput.amount,
-      donationTier
-    })
+      donationTier,
+    });
 
     await emailService.sendEmailMessage({
       recipientEmail: donationInput.email,
       subjectLine: thankYouEmailContent.subjectLine,
-      messageText: thankYouEmailContent.messageText
-    })
+      messageText: thankYouEmailContent.messageText,
+    });
 
-    if (donationTier === 'over_1000') {
+    if (donationTier === "over_1000") {
       const dedicatedFollowUpEmail = emailService.buildDedicatedFollowUpEmail({
         donorName: donationInput.userName,
-        campaignBio: campaignRow.campaign_bio
-      })
+        campaignBio: campaignRow.campaign_bio,
+      });
 
       await emailService.sendEmailMessage({
         recipientEmail: donationInput.email,
         subjectLine: dedicatedFollowUpEmail.subjectLine,
-        messageText: dedicatedFollowUpEmail.messageText
-      })
+        messageText: dedicatedFollowUpEmail.messageText,
+      });
     }
   }
 
-  const totalRaisedRow = await getSingleRow(queries.getCampaignTotalDonations, [donationInput.campaignId])
-  const totalRaisedAmount = Number(totalRaisedRow.total_raised || 0)
-  const previousTotalRaisedAmount = Math.max(0, totalRaisedAmount - donationInput.amount)
+  const totalRaisedRow = await getSingleRow(queries.getCampaignTotalDonations, [
+    donationInput.campaignId,
+  ]);
+  const totalRaisedAmount = Number(totalRaisedRow.total_raised || 0);
+  const previousTotalRaisedAmount = Math.max(
+    0,
+    totalRaisedAmount - donationInput.amount,
+  );
   const triggeredMilestones = await processReachedMilestones(
     campaignRow,
     previousTotalRaisedAmount,
     totalRaisedAmount,
-  )
+  );
 
   return {
     success: true,
@@ -131,9 +148,9 @@ async function processDonationAndEmailFlow (donationInput) {
       isAnonymousDonation: donationInput.isAnonymousDonation,
       donationTier,
       totalRaisedAmount,
-      triggeredMilestones
-    }
-  }
+      triggeredMilestones,
+    },
+  };
 }
 
 // GET all users (from donations table)
@@ -176,8 +193,8 @@ router.post("/api/donations", async (request, response) => {
       campaignUpdatesOptIn: Boolean(request.body.campaignUpdatesOptIn),
       amount: Number(request.body.amount),
       newsletterOptIn: Boolean(request.body.newsletterOptIn),
-      isAnonymousDonation: false
-    }
+      isAnonymousDonation: false,
+    };
 
     if (!authHelpers) {
       response.status(500).json({
@@ -202,13 +219,13 @@ router.post("/api/donations", async (request, response) => {
 
     donationInput.userId = userResult.user.user_id;
 
-    const donationResult = await processDonationAndEmailFlow(donationInput)
+    const donationResult = await processDonationAndEmailFlow(donationInput);
     if (!donationResult.success) {
       response.status(donationResult.statusCode).json({
         success: false,
-        error: donationResult.error
-      })
-      return
+        error: donationResult.error,
+      });
+      return;
     }
 
     if (userResult.newlyActivatable) {
@@ -217,8 +234,8 @@ router.post("/api/donations", async (request, response) => {
 
     response.status(201).json({
       success: true,
-      data: donationResult.data
-    })
+      data: donationResult.data,
+    });
   } catch (error) {
     response.status(500).json({
       success: false,
@@ -235,18 +252,22 @@ router.post("/api/campaigns/:id/donations", async (request, response) => {
       return;
     }
 
-    const normalizedCampaignDonation = buildCampaignDonationRecord(request.body)
+    const normalizedCampaignDonation = buildCampaignDonationRecord(
+      request.body,
+    );
     const donationInput = {
       campaignId: Number(request.params.id),
-      userName: String(normalizedCampaignDonation.userName || '').trim(),
-      email: String(normalizedCampaignDonation.email || '').trim(),
-      accountNumber: String(normalizedCampaignDonation.accountNumber || '').trim(),
+      userName: String(normalizedCampaignDonation.userName || "").trim(),
+      email: String(normalizedCampaignDonation.email || "").trim(),
+      accountNumber: String(
+        normalizedCampaignDonation.accountNumber || "",
+      ).trim(),
       campaignUpdatesOptIn: normalizedCampaignDonation.isSubscription,
       amount: Number(request.body?.amount),
       newsletterOptIn: normalizedCampaignDonation.generalNewsletter,
       isAnonymousDonation: normalizedCampaignDonation.isAnonymousDonation,
       userId: null,
-    }
+    };
 
     let userResult = null;
     if (!donationInput.isAnonymousDonation) {
@@ -263,10 +284,12 @@ router.post("/api/campaigns/:id/donations", async (request, response) => {
       donationInput.userId = userResult.user.user_id;
     }
 
-    const donationResult = await processDonationAndEmailFlow(donationInput)
+    const donationResult = await processDonationAndEmailFlow(donationInput);
     if (!donationResult.success) {
-      response.status(donationResult.statusCode).json({ error: donationResult.error })
-      return
+      response
+        .status(donationResult.statusCode)
+        .json({ error: donationResult.error });
+      return;
     }
 
     if (userResult?.newlyActivatable) {
@@ -352,8 +375,11 @@ function validateDonationInput(donationInput) {
     return "userName is required and must be at least 2 characters";
   }
 
-  if (!donationInput.isAnonymousDonation && (!donationInput.email || !donationInput.email.includes('@'))) {
-    return 'email is required and must be a valid email address'
+  if (
+    !donationInput.isAnonymousDonation &&
+    (!donationInput.email || !donationInput.email.includes("@"))
+  ) {
+    return "email is required and must be a valid email address";
   }
 
   if (!Number.isFinite(donationInput.amount) || donationInput.amount <= 0) {
@@ -363,11 +389,18 @@ function validateDonationInput(donationInput) {
   return null;
 }
 
-async function getReachedMilestoneEvents(campaignRow, previousTotalRaisedAmount, totalRaisedAmount) {
+async function getReachedMilestoneEvents(
+  campaignRow,
+  previousTotalRaisedAmount,
+  totalRaisedAmount,
+) {
   const reachedMilestoneEvents = [];
 
   function didCrossThreshold(thresholdAmount) {
-    return previousTotalRaisedAmount < thresholdAmount && totalRaisedAmount >= thresholdAmount
+    return (
+      previousTotalRaisedAmount < thresholdAmount &&
+      totalRaisedAmount >= thresholdAmount
+    );
   }
 
   if (
@@ -405,24 +438,33 @@ async function getReachedMilestoneEvents(campaignRow, previousTotalRaisedAmount,
     didCrossThreshold(Number(campaignRow.goal_amount))
   ) {
     reachedMilestoneEvents.push({
-      eventType: 'goal_reached',
-      milestoneAmount: Number(campaignRow.goal_amount)
-    })
+      eventType: "goal_reached",
+      milestoneAmount: Number(campaignRow.goal_amount),
+    });
   }
 
-  return reachedMilestoneEvents
+  return reachedMilestoneEvents;
 }
 
-async function sendMilestoneEmailsToSubscribers ({ campaignId, campaignBio, milestoneAmount, totalRaisedAmount }) {
-  const campaignSubscribers = await getManyRows(queries.getCampaignUpdateSubscribers, [campaignId])
+async function sendMilestoneEmailsToSubscribers({
+  campaignId,
+  campaignBio,
+  milestoneAmount,
+  totalRaisedAmount,
+}) {
+  const campaignSubscribers = await getManyRows(
+    queries.getCampaignUpdateSubscribers,
+    [campaignId],
+  );
 
-  const sendResults = await Promise.all(campaignSubscribers.map(async (subscriber) => {
-    const emailContent = emailService.buildMilestoneFollowUpEmail({
-      donorName: subscriber.user_name || 'donor',
-      campaignBio,
-      milestoneAmount,
-      totalRaisedAmount
-    })
+  const sendResults = await Promise.all(
+    campaignSubscribers.map(async (subscriber) => {
+      const emailContent = emailService.buildMilestoneFollowUpEmail({
+        donorName: subscriber.user_name || "donor",
+        campaignBio,
+        milestoneAmount,
+        totalRaisedAmount,
+      });
 
       return emailService.sendEmailMessage({
         recipientEmail: subscriber.email,
@@ -438,7 +480,11 @@ async function sendMilestoneEmailsToSubscribers ({ campaignId, campaignBio, mile
   };
 }
 
-async function processReachedMilestones(campaignRow, previousTotalRaisedAmount, totalRaisedAmount) {
+async function processReachedMilestones(
+  campaignRow,
+  previousTotalRaisedAmount,
+  totalRaisedAmount,
+) {
   const reachedMilestones = await getReachedMilestoneEvents(
     campaignRow,
     previousTotalRaisedAmount,
@@ -461,21 +507,21 @@ async function processReachedMilestones(campaignRow, previousTotalRaisedAmount, 
       reachedMilestone.eventType,
     ]);
 
-    let milestoneSendStats
-    if (reachedMilestone.eventType === 'goal_reached') {
+    let milestoneSendStats;
+    if (reachedMilestone.eventType === "goal_reached") {
       milestoneSendStats = await sendGoalReachedEmailsToDonors({
         campaignId: campaignRow.campaign_id,
         campaignBio: campaignRow.campaign_bio,
         goalAmount: reachedMilestone.milestoneAmount,
-        totalRaisedAmount
-      })
+        totalRaisedAmount,
+      });
     } else {
       milestoneSendStats = await sendMilestoneEmailsToSubscribers({
         campaignId: campaignRow.campaign_id,
         campaignBio: campaignRow.campaign_bio,
         milestoneAmount: reachedMilestone.milestoneAmount,
-        totalRaisedAmount
-      })
+        totalRaisedAmount,
+      });
     }
 
     triggeredMilestones.push({
@@ -488,28 +534,37 @@ async function processReachedMilestones(campaignRow, previousTotalRaisedAmount, 
   return triggeredMilestones;
 }
 
-async function sendGoalReachedEmailsToDonors ({ campaignId, campaignBio, goalAmount, totalRaisedAmount }) {
-  const campaignDonors = await getManyRows(queries.getCampaignDonorsWithEmail, [campaignId])
+async function sendGoalReachedEmailsToDonors({
+  campaignId,
+  campaignBio,
+  goalAmount,
+  totalRaisedAmount,
+}) {
+  const campaignDonors = await getManyRows(queries.getCampaignDonorsWithEmail, [
+    campaignId,
+  ]);
 
-  const sendResults = await Promise.all(campaignDonors.map(async (donor) => {
-    const emailContent = emailService.buildGoalReachedEmail({
-      donorName: donor.user_name || 'donor',
-      campaignBio,
-      goalAmount,
-      totalRaisedAmount
-    })
+  const sendResults = await Promise.all(
+    campaignDonors.map(async (donor) => {
+      const emailContent = emailService.buildGoalReachedEmail({
+        donorName: donor.user_name || "donor",
+        campaignBio,
+        goalAmount,
+        totalRaisedAmount,
+      });
 
-    return emailService.sendEmailMessage({
-      recipientEmail: donor.email,
-      subjectLine: emailContent.subjectLine,
-      messageText: emailContent.messageText
-    })
-  }))
+      return emailService.sendEmailMessage({
+        recipientEmail: donor.email,
+        subjectLine: emailContent.subjectLine,
+        messageText: emailContent.messageText,
+      });
+    }),
+  );
 
   return {
     notifiedSubscribers: campaignDonors.length,
-    smtpSentCount: sendResults.filter((result) => result.sent).length
-  }
+    smtpSentCount: sendResults.filter((result) => result.sent).length,
+  };
 }
 
-module.exports = { router, setDatabase, setAuthHelpers }
+module.exports = { router, setDatabase, setAuthHelpers };

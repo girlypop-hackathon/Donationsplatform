@@ -357,7 +357,9 @@ function Dashboard({ authUser }) {
             </Link>
           </div>
 
-          {campaignActionError && <p className="auth-error">{campaignActionError}</p>}
+          {campaignActionError && (
+            <p className="auth-error">{campaignActionError}</p>
+          )}
           {campaignActionSuccess && (
             <p className="auth-success">{campaignActionSuccess}</p>
           )}
@@ -368,9 +370,11 @@ function Dashboard({ authUser }) {
             <p className="auth-error">{campaignError}</p>
           )}
 
-          {!isLoadingCampaigns && !campaignError && myCampaigns.length === 0 && (
-            <p>You have not created any campaigns yet.</p>
-          )}
+          {!isLoadingCampaigns &&
+            !campaignError &&
+            myCampaigns.length === 0 && (
+              <p>You have not created any campaigns yet.</p>
+            )}
 
           {!isLoadingCampaigns && !campaignError && myCampaigns.length > 0 && (
             <div className="dashboard-campaign-grid">
@@ -386,7 +390,10 @@ function Dashboard({ authUser }) {
                     key={campaign.campaign_id}
                     className="dashboard-campaign-card"
                   >
-                    <Link to={campaignPath} className="dashboard-campaign-image-link">
+                    <Link
+                      to={campaignPath}
+                      className="dashboard-campaign-image-link"
+                    >
                       <img
                         src={resolveCampaignImageSource(
                           campaign.image,
@@ -398,14 +405,17 @@ function Dashboard({ authUser }) {
                             event,
                             FALLBACK_IMAGE_URL,
                             BACKUP_FALLBACK_IMAGE_URL,
-                          )
+                          );
                         }}
                       />
                     </Link>
 
                     <div className="dashboard-campaign-body">
                       <h4>
-                        <Link to={campaignPath} className="dashboard-campaign-title-link">
+                        <Link
+                          to={campaignPath}
+                          className="dashboard-campaign-title-link"
+                        >
                           {campaign.campaign_bio ||
                             `Campaign #${campaign.campaign_id}`}
                         </Link>
@@ -435,7 +445,10 @@ function Dashboard({ authUser }) {
                       </div>
 
                       <div className="dashboard-campaign-actions">
-                        <Link to={campaignPath} className="dashboard-action-btn">
+                        <Link
+                          to={campaignPath}
+                          className="dashboard-action-btn"
+                        >
                           Se kampagne
                         </Link>
                         <button
@@ -448,7 +461,9 @@ function Dashboard({ authUser }) {
                         <button
                           type="button"
                           className="dashboard-action-btn dashboard-action-btn-danger"
-                          disabled={isDeletingCampaignId === campaign.campaign_id}
+                          disabled={
+                            isDeletingCampaignId === campaign.campaign_id
+                          }
                           onClick={() => deleteCampaign(campaign.campaign_id)}
                         >
                           {isDeletingCampaignId === campaign.campaign_id
@@ -470,7 +485,9 @@ function Dashboard({ authUser }) {
                             onChange={handleCampaignEditChange}
                           />
 
-                          <label htmlFor={`edit-description-${campaign.campaign_id}`}>
+                          <label
+                            htmlFor={`edit-description-${campaign.campaign_id}`}
+                          >
                             Beskrivelse
                           </label>
                           <textarea
@@ -504,7 +521,9 @@ function Dashboard({ authUser }) {
                             onChange={handleCampaignEditChange}
                           />
 
-                          <label htmlFor={`edit-deadline-${campaign.campaign_id}`}>
+                          <label
+                            htmlFor={`edit-deadline-${campaign.campaign_id}`}
+                          >
                             Deadline
                           </label>
                           <input
@@ -520,7 +539,9 @@ function Dashboard({ authUser }) {
                               type="button"
                               className="dashboard-action-btn"
                               disabled={isSavingCampaign}
-                              onClick={() => saveCampaignEdit(campaign.campaign_id)}
+                              onClick={() =>
+                                saveCampaignEdit(campaign.campaign_id)
+                              }
                             >
                               {isSavingCampaign ? "Gemmer..." : "Gem"}
                             </button>

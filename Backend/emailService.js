@@ -151,16 +151,16 @@ function buildMilestoneFollowUpEmail({
 /**
  * Builds an email sent when a campaign reaches its full goal amount.
  */
-function buildGoalReachedEmail ({
+function buildGoalReachedEmail({
   donorName,
   campaignBio,
   goalAmount,
-  totalRaisedAmount
+  totalRaisedAmount,
 }) {
   return {
     subjectLine: `Campaign goal reached: ${goalAmount} DKK`,
-    messageText: `Hi ${donorName},\n\nAmazing news from "${campaignBio}": the campaign has reached its goal of ${goalAmount} DKK and now stands at ${totalRaisedAmount} DKK.\n\nThank you for helping us reach this target.`
-  }
+    messageText: `Hi ${donorName},\n\nAmazing news from "${campaignBio}": the campaign has reached its goal of ${goalAmount} DKK and now stands at ${totalRaisedAmount} DKK.\n\nThank you for helping us reach this target.`,
+  };
 }
 
 /**

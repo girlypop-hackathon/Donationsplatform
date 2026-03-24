@@ -63,7 +63,9 @@ function SignIn({ isAuthenticated, onLogin, isCheckingSession }) {
       const result = await readJsonSafely(response);
 
       if (!response.ok || !result?.data?.token || !result?.data?.user) {
-        throw new Error(result?.error || `Login failed (HTTP ${response.status})`);
+        throw new Error(
+          result?.error || `Login failed (HTTP ${response.status})`,
+        );
       }
 
       await onLogin(result.data.token, result.data.user);
@@ -77,7 +79,9 @@ function SignIn({ isAuthenticated, onLogin, isCheckingSession }) {
 
   async function handleRequestActivationLink() {
     if (!email || !email.includes("@") || isRequestingActivation) {
-      setErrorMessage("Enter a valid email before requesting an activation link.");
+      setErrorMessage(
+        "Enter a valid email before requesting an activation link.",
+      );
       return;
     }
 
@@ -158,7 +162,8 @@ function SignIn({ isAuthenticated, onLogin, isCheckingSession }) {
         {infoMessage && <p className="auth-success">{infoMessage}</p>}
         {devActivationLink && (
           <p className="auth-success">
-            Development activation link: <a href={devActivationLink}>{devActivationLink}</a>
+            Development activation link:{" "}
+            <a href={devActivationLink}>{devActivationLink}</a>
           </p>
         )}
 

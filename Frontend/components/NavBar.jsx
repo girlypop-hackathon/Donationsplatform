@@ -186,7 +186,11 @@ function Navbar({ isAuthenticated, authUser, onLogout }) {
             )}
           </div>
         ) : (
-          <Link className="nav-action nav-signin-btn" to="/signin" style={navItemStyle}>
+          <Link
+            className="nav-action nav-signin-btn"
+            to="/signin"
+            style={navItemStyle}
+          >
             Sign In
           </Link>
         )}

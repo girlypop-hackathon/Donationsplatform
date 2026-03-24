@@ -5,17 +5,17 @@ Beskrivelse: CampaignCard componenter. Displays campaign image, bio, progress ba
 Uses a fallback image if no image is provided or if the image fails to load.
 */
 
-import React from 'react'
-import { Link } from 'react-router-dom'
-import ProgressBar from './ProgressBar'
+import React from "react";
+import { Link } from "react-router-dom";
+import ProgressBar from "./ProgressBar";
 import {
   applyImageFallbackOnce,
   createImagePlaceholderDataUri,
-  resolveCampaignImageSource
-} from '../utils/imagePaths'
+  resolveCampaignImageSource,
+} from "../utils/imagePaths";
 
-const FALLBACK_IMAGE = resolveCampaignImageSource('', 'fundtogether-logo.png')
-const BACKUP_FALLBACK_IMAGE = createImagePlaceholderDataUri('Campaign')
+const FALLBACK_IMAGE = resolveCampaignImageSource("", "fundtogether-logo.png");
+const BACKUP_FALLBACK_IMAGE = createImagePlaceholderDataUri("Campaign");
 
 function CampaignCard({ campaign }) {
   if (!campaign) {
@@ -27,7 +27,10 @@ function CampaignCard({ campaign }) {
 
   const goalAmount = Number(campaign.goal_amount) || 0;
   const raisedAmount = Number(campaign.amount_raised) || 0;
-  const imageSource = resolveCampaignImageSource(campaign.image, 'fundtogether-logo.png')
+  const imageSource = resolveCampaignImageSource(
+    campaign.image,
+    "fundtogether-logo.png",
+  );
 
   return (
     <div className="card">
@@ -35,7 +38,7 @@ function CampaignCard({ campaign }) {
         src={imageSource}
         alt={campaign.campaign_bio || "Animal campaign"}
         onError={(event) => {
-          applyImageFallbackOnce(event, FALLBACK_IMAGE, BACKUP_FALLBACK_IMAGE)
+          applyImageFallbackOnce(event, FALLBACK_IMAGE, BACKUP_FALLBACK_IMAGE);
         }}
       />
 

@@ -12,7 +12,7 @@ env:
 
 on:
   push:
-    branches: [ main, Developer ]
+    branches: [main, Developer]
 
 jobs:
   build-and-deploy:
