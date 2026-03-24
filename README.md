@@ -66,6 +66,12 @@ Der er nu en GitHub Actions workflow i `.github/workflows/lint.yml`.
 - Tjekker både frontend og backend
 - Hvis lint fejler, fejler workflowet også (lint gate)
 
+## Deployment på VM med Docker
+
+Se trin-for-trin guide her:
+
+- [Documentation/DockerGuide.md](Documentation/DockerGuide.md)
+
 ## AI written code
 This is a vibe hackaton. All code is writtten by AI. 
 As agents we used ChatGPT, Spec Kit with CoPilot, Codex 5.3 and Mistral Vibe. 
