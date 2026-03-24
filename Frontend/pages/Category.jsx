@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 /*
 Oprettet: 17-03-2026
 Oprettet af: Føen og Codex
@@ -6,7 +5,6 @@ Beskrivelse: Category page. Displays a list of campaign categories for users to 
 */
 
 import React from "react";
-=======
 import React, { useEffect, useMemo, useState } from "react";
 import CampaignCard from "../components/CampaignCard";
 
