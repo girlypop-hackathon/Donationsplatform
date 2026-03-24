@@ -5,6 +5,7 @@ Beskrivelse: Home page component for the donation platform. Displays grid of cam
 */
 
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import CampaignCard from "../components/CampaignCard";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
@@ -134,9 +135,11 @@ function Home() {
   return (
     <div>
       <section className="hero">
-        <h1>One platform. Unlimited support</h1>
-
-        <p>Where people come together to make a difference</p>
+        <h1>Where people come together to make a difference</h1>
+        <p className="hero-subtitle">One platform. Unlimited support</p>
+        <Link className="hero-cta" to="/create">
+          Start a Campaign
+        </Link>
       </section>
 
       <section className="campaign-grid">
@@ -145,6 +148,7 @@ function Home() {
         {shouldUseFallbackCampaigns && (
           <p>Showing demo campaigns while API data is unavailable.</p>
         )}
+
         {!isLoadingCampaigns &&
           campaignsToDisplay.map((campaign) => (
             <CampaignCard key={campaign.campaign_id} campaign={campaign} />

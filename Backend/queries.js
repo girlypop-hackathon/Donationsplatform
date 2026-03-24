@@ -1,7 +1,7 @@
 /*
 Oprettet: 18-03-2026
-Af: Linea
-Beskrivelse: - SQL queries for the donation platform
+Af: Linea og Mistral Vibe
+Beskrivelse: SQL queries for the donation platform
 */
 
 const queries = {
@@ -18,8 +18,9 @@ const queries = {
   FROM campaigns 
   LEFT JOIN providers ON campaigns.provider_id = providers.organization_id`,
 
-  // User/donation queries (since there's no separate users table, we'll use donations)
-  getAllUsers: "SELECT DISTINCT user_name, email FROM donations",
+  // User queries
+  getAllUsers:
+    "SELECT user_id, name, email, status, created_at FROM users ORDER BY created_at DESC",
 
   // Specific GET queries
   getCampaignsByProvider:
@@ -31,13 +32,14 @@ const queries = {
   // Donation write and campaign progress queries
   insertDonation: `INSERT INTO donations (
     campaign_id,
+    user_id,
     user_name,
     email,
     account_number,
     is_subscription,
     amount,
     general_newsletter
-  ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
   getCampaignWithProviderName: `SELECT
     campaigns.*, providers.name AS provider_name
   FROM campaigns
@@ -54,6 +56,12 @@ const queries = {
     AND is_subscription = 1
     AND email IS NOT NULL
     AND TRIM(email) != ''`,
+  getCampaignDonorsWithEmail: `SELECT DISTINCT email, user_name
+  FROM donations
+  WHERE campaign_id = ?
+    AND email IS NOT NULL
+    AND TRIM(email) != ''
+    AND email LIKE '%@%'`,
   getNewsletterSubscribers: `SELECT DISTINCT email, user_name
   FROM donations
   WHERE general_newsletter = 1
@@ -77,9 +85,9 @@ const queries = {
   createProvider:
     "INSERT INTO providers (name, logo, bio, website_link, is_organization) VALUES (?, ?, ?, ?, ?)",
   createCampaign:
-    "INSERT INTO campaigns (provider_id, image, campaign_bio, body_text, goal_amount, amount_raised, milestone_1, milestone_2, milestone_3) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    "INSERT INTO campaigns (provider_id, category, image, campaign_bio, body_text, goal_amount, amount_raised, milestone_1, milestone_2, milestone_3, deadline) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
   createDonation:
-    "INSERT INTO donations (campaign_id, user_name, email, account_number, is_subscription, amount, general_newsletter) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    "INSERT INTO donations (campaign_id, user_id, user_name, email, account_number, is_subscription, amount, general_newsletter) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
 };
 
 module.exports = queries;

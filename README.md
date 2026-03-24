@@ -1,6 +1,6 @@
 # Donationsplatform
 
-10 day vibe hackaton
+10 day vibe hackaton having fun together
 
 ## Sådan kører du projektet
 
@@ -66,6 +66,14 @@ Der er nu en GitHub Actions workflow i `.github/workflows/lint.yml`.
 - Tjekker både frontend og backend
 - Hvis lint fejler, fejler workflowet også (lint gate)
 
-## AI prompt
+## Deployment på VM med Docker
 
-spec kit - hvordan foreslår de at man udvikler med AI. Laver kravspekifekation og man vericiferer
+Se trin-for-trin guide her:
+
+- [Documentation/DockerGuide.md](Documentation/DockerGuide.md)
+
+## AI written code
+
+This is a vibe hackaton. All code is writtten by AI.
+As agents we used ChatGPT, Spec Kit with CoPilot, Codex 5.3 and Mistral Vibe.
+As studens we are using GitHub Student Pack to get free accees on these models.

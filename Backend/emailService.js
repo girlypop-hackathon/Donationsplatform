@@ -1,7 +1,7 @@
 /*
 Oprettet: 18-03-2026
-Af: Copilot
-Beskrivelse: Centralized email helpers for thank-you emails, milestones, campaign close and newsletters.
+Af: Linea og Mistral Vibe
+Beskrivelse: Centralized email helpers for thank-you emails, milestones, goal reached, campaign close and newsletters.
 */
 
 const nodemailer = require("nodemailer");
@@ -35,6 +35,19 @@ function createSmtpTransporter() {
 }
 
 const smtpTransporter = createSmtpTransporter();
+
+if (smtpTransporter) {
+  console.log("[EMAIL] SMTP transporter configured", {
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT || 587),
+    secure: process.env.SMTP_SECURE === "true",
+    from: senderEmailAddress,
+  });
+} else {
+  console.warn(
+    "[EMAIL] SMTP is not configured. Emails will be logged with EMAIL_FALLBACK_LOG instead of being sent.",
+  );
+}
 
 /**
  * Sends an email through SMTP when configured, otherwise logs the message as a safe fallback.
@@ -136,6 +149,21 @@ function buildMilestoneFollowUpEmail({
 }
 
 /**
+ * Builds an email sent when a campaign reaches its full goal amount.
+ */
+function buildGoalReachedEmail({
+  donorName,
+  campaignBio,
+  goalAmount,
+  totalRaisedAmount,
+}) {
+  return {
+    subjectLine: `Campaign goal reached: ${goalAmount} DKK`,
+    messageText: `Hi ${donorName},\n\nAmazing news from "${campaignBio}": the campaign has reached its goal of ${goalAmount} DKK and now stands at ${totalRaisedAmount} DKK.\n\nThank you for helping us reach this target.`,
+  };
+}
+
+/**
  * Builds the campaign close email for donors subscribed to campaign updates.
  */
 function buildCampaignCloseEmail({
@@ -159,9 +187,21 @@ function buildNewsletterEmail({ donorName, newsletterTitle, newsletterBody }) {
   };
 }
 
+/**
+ * Builds the account activation email containing a single-use activation link.
+ */
+function buildAccountActivationEmail({ recipientName, activationLink }) {
+  return {
+    subjectLine: "Activate your Donations Platform account",
+    messageText: `Hi ${recipientName},\n\nAn account has been created for this email on Donations Platform.\n\nActivate your account and set your password using this secure link:\n${activationLink}\n\nThe link expires in 24 hours and can only be used once.\n\nIf you did not expect this email, you can safely ignore it.`,
+  };
+}
+
 module.exports = {
+  buildAccountActivationEmail,
   buildCampaignCloseEmail,
   buildDedicatedFollowUpEmail,
+  buildGoalReachedEmail,
   buildMilestoneFollowUpEmail,
   buildNewsletterEmail,
   buildThankYouEmailForTier,

@@ -1,0 +1,71 @@
+##
+# /*
+# Oprettet: 18-03-2026
+# Af: Jonas og GitHub Copilot (GPT-5.3-codex)
+# Beskrivelse: Build and deploy workflow for the donation platform
+# */
+##
+name: Build and Deploy
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+on:
+  push:
+    branches: [main, Developer]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Login to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Build image
+        run: docker build -t ghcr.io/girlypop-hackathon/donationsplatform:latest .
+
+      - name: Push image
+        run: docker push ghcr.io/girlypop-hackathon/donationsplatform:latest
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+      - name: Deploy to VM
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.ADMIN_USERNAME }}@${{ secrets.SSH_HOST }} << 'EOF'
+
+          echo "${{ secrets.GHCR_READ_TOKEN }}" | docker login ghcr.io -u girlypop-hackathon --password-stdin
+
+          docker pull ghcr.io/girlypop-hackathon/donationsplatform:latest
+
+          docker stop app || true
+          docker rm app || true
+
+          docker run -d -p 80:3000 --name app \
+          ghcr.io/girlypop-hackathon/donationsplatform:latest
+
+          for attempt in $(seq 1 20); do
+            if curl -fsS http://localhost:80/api/providers > /dev/null; then
+              echo "Health check passed on attempt ${attempt}."
+              exit 0
+            fi
+
+            echo "Health check attempt ${attempt} failed, retrying..."
+            sleep 3
+          done
+
+          echo "Health check failed after 20 attempts. Showing container logs..."
+          docker logs app || true
+          exit 1
+
+          EOF

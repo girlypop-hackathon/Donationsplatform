@@ -1,4 +1,11 @@
-// index.js - Main entry point for the donation platform API
+/*
+Oprettet: 17-03-2026
+Oprettet af: Linea og Mistral Vibe
+Beskrivelse: index.js - Main entry point for the donation platform API
+*/
+
+require("dotenv").config();
+
 const app = require("./api-router.js");
 
 console.log("Donation Platform API is ready to serve requests!");

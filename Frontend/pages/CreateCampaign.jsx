@@ -1,15 +1,37 @@
+/*
+Oprettet: 17-03-2026
+Oprettet af: Føen og Codex
+Beskrivelse: CreateCampaign page. Provides a form for users to create a new campaign.
+*/
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 const API_PREFIX = API_BASE_URL ? `${API_BASE_URL}/api` : "/api";
 
+const CAMPAIGN_CATEGORIES = [
+  "Medical Support",
+  "Animal Rescue",
+  "Family and Elderly Care",
+  "Education",
+  "Emergency Relief",
+  "Environment",
+  "Community Projects",
+  "Other",
+];
+
 function CreateCampaign() {
   const navigate = useNavigate();
 
   // Form state
   const [formData, setFormData] = useState({
+    creator_name: "",
+    creator_email: "",
     provider_id: "",
+    provider_name: "",
+    use_private_provider: false,
+    category: "Medical Support",
     image: "",
     campaign_bio: "",
     body_text: "",
@@ -18,6 +40,7 @@ function CreateCampaign() {
     milestone_1: "25% of goal reached",
     milestone_2: "50% of goal reached",
     milestone_3: "75% of goal reached",
+    deadline: "",
   });
 
   // UI state
@@ -60,11 +83,37 @@ function CreateCampaign() {
 
     // Basic validation
     if (
-      !formData.provider_id ||
+      !formData.creator_name ||
+      !formData.creator_email ||
       !formData.campaign_bio ||
       !formData.goal_amount
     ) {
-      setError("Provider, campaign bio, and goal amount are required");
+      setError(
+        "Creator name, creator email, provider, campaign bio, and goal amount are required",
+      );
+      return;
+    }
+
+    const hasSelectedExistingProvider =
+      Number.isFinite(Number(formData.provider_id)) &&
+      Number(formData.provider_id) > 0;
+    const hasCustomOrganizationName = Boolean(
+      String(formData.provider_name || "").trim(),
+    );
+
+    if (
+      !formData.use_private_provider &&
+      !hasSelectedExistingProvider &&
+      !hasCustomOrganizationName
+    ) {
+      setError(
+        "Choose an existing organization, choose Private, or enter your own organization name.",
+      );
+      return;
+    }
+
+    if (!formData.creator_email.includes("@")) {
+      setError("Creator email must be a valid email");
       return;
     }
 
@@ -87,7 +136,16 @@ function CreateCampaign() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          provider_id: parseInt(formData.provider_id),
+          creator_name: formData.creator_name.trim(),
+          creator_email: formData.creator_email.trim(),
+          provider_id: hasSelectedExistingProvider
+            ? parseInt(formData.provider_id)
+            : null,
+          provider_name: hasCustomOrganizationName
+            ? formData.provider_name.trim()
+            : null,
+          is_private_provider: Boolean(formData.use_private_provider),
+          category: formData.category,
           image: formData.image || "https://placehold.co/800x400?text=Campaign",
           campaign_bio: formData.campaign_bio,
           body_text: formData.body_text,
@@ -96,6 +154,7 @@ function CreateCampaign() {
           milestone_1: formData.milestone_1 || null,
           milestone_2: formData.milestone_2 || null,
           milestone_3: formData.milestone_3 || null,
+          deadline: formData.deadline || null,
         }),
       });
 
@@ -109,7 +168,12 @@ function CreateCampaign() {
 
       // Reset form
       setFormData({
+        creator_name: "",
+        creator_email: "",
         provider_id: "",
+        provider_name: "",
+        use_private_provider: false,
+        category: "Medical Support",
         image: "",
         campaign_bio: "",
         body_text: "",
@@ -122,7 +186,7 @@ function CreateCampaign() {
 
       // Navigate to the new campaign page after a short delay
       setTimeout(() => {
-        navigate(`/campaigns/${result.data.campaign_id}`);
+        navigate(`/campaign/${result.data.campaign_id}`);
       }, 2000);
     } catch (err) {
       setError(err.message || "Failed to create campaign");
@@ -134,7 +198,6 @@ function CreateCampaign() {
   return (
     <div className="form-page">
       <h1>Create a new campaign</h1>
-      <h2>- for now without logging in upsiiii </h2>
       <p>
         Fill out the form below to create a new fundraising campaign. Make sure
         to provide a compelling title and description to attract donors. You can
@@ -147,7 +210,33 @@ function CreateCampaign() {
 
       <form className="campaign-form" onSubmit={handleSubmit}>
         <div className="form-group">
-          <label htmlFor="provider_id">Chose a owner *</label>
+          <label htmlFor="creator_name">Your full name *</label>
+          <input
+            type="text"
+            name="creator_name"
+            id="creator_name"
+            placeholder="Enter your full name"
+            value={formData.creator_name}
+            onChange={handleChange}
+            required
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="creator_email">Your email *</label>
+          <input
+            type="email"
+            name="creator_email"
+            id="creator_email"
+            placeholder="name@example.com"
+            value={formData.creator_email}
+            onChange={handleChange}
+            required
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="provider_id">Choose organization or private *</label>
           {isLoading ? (
             <select name="provider_id" id="provider_id" disabled>
               <option value="">Loading providers...</option>
@@ -157,10 +246,26 @@ function CreateCampaign() {
               name="provider_id"
               id="provider_id"
               value={formData.provider_id}
-              onChange={handleChange}
-              required
+              onChange={(event) => {
+                const nextProviderValue = event.target.value;
+                if (nextProviderValue === "private") {
+                  setFormData((prev) => ({
+                    ...prev,
+                    provider_id: "",
+                    use_private_provider: true,
+                  }));
+                  return;
+                }
+
+                setFormData((prev) => ({
+                  ...prev,
+                  provider_id: nextProviderValue,
+                  use_private_provider: false,
+                }));
+              }}
             >
               <option value="">Select a provider</option>
+              <option value="private">Private</option>
               {providers.map((provider) => (
                 <option
                   key={provider.organization_id}
@@ -171,6 +276,33 @@ function CreateCampaign() {
               ))}
             </select>
           )}
+
+          <label htmlFor="provider_name">Or write your own organization</label>
+          <input
+            type="text"
+            name="provider_name"
+            id="provider_name"
+            placeholder="Enter organization name"
+            value={formData.provider_name}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="category">Category *</label>
+          <select
+            name="category"
+            id="category"
+            value={formData.category}
+            onChange={handleChange}
+            required
+          >
+            {CAMPAIGN_CATEGORIES.map((categoryOption) => (
+              <option key={categoryOption} value={categoryOption}>
+                {categoryOption}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="form-group">
@@ -222,6 +354,17 @@ function CreateCampaign() {
             min="1"
             step="1"
             required
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="deadline">Campaign deadline (optional)</label>
+          <input
+            type="date"
+            name="deadline"
+            id="deadline"
+            value={formData.deadline}
+            onChange={handleChange}
           />
         </div>
 

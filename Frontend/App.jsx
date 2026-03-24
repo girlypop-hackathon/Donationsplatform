@@ -1,3 +1,9 @@
+/*
+Oprettet: 17-03-2026
+Oprettet af: Nikoleta
+Beskrivelse: Main App component. Sets up routing for the application using React Router, manages authentication state, and provides a protected route component to restrict access to certain pages based on authentication status. Also includes a Navbar and Footer that are displayed on all pages. Fetches the current user's session on app load and provides login/logout functionality through an authApi object.
+*/
+
 import React, { useEffect, useMemo, useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
@@ -11,8 +17,10 @@ import CreateCampaign from "./pages/CreateCampaign";
 import Category from "./pages/Category";
 import Info from "./pages/Info";
 import SignIn from "./pages/SignIn";
+import ActivateAccount from "./pages/ActivateAccount";
 import Search from "./pages/Search";
 import Dashboard from "./pages/Dashboard";
+import Profile from "./pages/Profile";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 const API_PREFIX = API_BASE_URL ? `${API_BASE_URL}/api` : "/api";
@@ -130,10 +138,26 @@ function App() {
             }
           />
           <Route
+            path="/activate"
+            element={<ActivateAccount onLogin={authApi.login} />}
+          />
+          <Route
             path="/dashboard"
             element={
               <ProtectedRoute isAuthenticated={isAuthenticated}>
                 <Dashboard authUser={authUser} />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute isAuthenticated={isAuthenticated}>
+                <Profile
+                  authUser={authUser}
+                  authToken={authToken}
+                  onAuthUserUpdated={setAuthUser}
+                />
               </ProtectedRoute>
             }
           />

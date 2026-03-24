@@ -1143,11 +1143,9 @@ app.post("/api/campaigns", (req, res) => {
   } = req.body;
 
   if (!provider_id || !campaign_bio || !goal_amount) {
-    return res
-      .status(400)
-      .json({
-        error: "provider_id, campaign_bio, and goal_amount are required",
-      });
+    return res.status(400).json({
+      error: "provider_id, campaign_bio, and goal_amount are required",
+    });
   }
 
   db.run(

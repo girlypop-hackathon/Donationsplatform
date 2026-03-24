@@ -1,15 +1,38 @@
+/*
+Oprettet: 20-03-2026
+Oprettet af: Føen og Codex
+Beskrivelse: SignIn component. Provides a form for users to sign in with their email and password. Handles form submission, displays error messages, and redirects to the dashboard on successful login. Also includes functionality to request an account activation link if the user's account is not yet active.
+*/
+
 import React, { useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 const API_PREFIX = API_BASE_URL ? `${API_BASE_URL}/api` : "/api";
 
+async function readJsonSafely(response) {
+  const rawBody = await response.text();
+
+  if (!rawBody) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(rawBody);
+  } catch (_error) {
+    return {};
+  }
+}
+
 function SignIn({ isAuthenticated, onLogin, isCheckingSession }) {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [infoMessage, setInfoMessage] = useState("");
+  const [devActivationLink, setDevActivationLink] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRequestingActivation, setIsRequestingActivation] = useState(false);
 
   if (!isCheckingSession && isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
@@ -22,6 +45,8 @@ function SignIn({ isAuthenticated, onLogin, isCheckingSession }) {
 
     try {
       setErrorMessage("");
+      setInfoMessage("");
+      setDevActivationLink("");
       setIsSubmitting(true);
 
       const response = await fetch(`${API_PREFIX}/auth/login`, {
@@ -35,10 +60,12 @@ function SignIn({ isAuthenticated, onLogin, isCheckingSession }) {
         }),
       });
 
-      const result = await response.json();
+      const result = await readJsonSafely(response);
 
       if (!response.ok || !result?.data?.token || !result?.data?.user) {
-        throw new Error(result?.error || "Login failed");
+        throw new Error(
+          result?.error || `Login failed (HTTP ${response.status})`,
+        );
       }
 
       await onLogin(result.data.token, result.data.user);
@@ -47,6 +74,52 @@ function SignIn({ isAuthenticated, onLogin, isCheckingSession }) {
       setErrorMessage(error.message || "Could not sign in. Try again.");
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function handleRequestActivationLink() {
+    if (!email || !email.includes("@") || isRequestingActivation) {
+      setErrorMessage(
+        "Enter a valid email before requesting an activation link.",
+      );
+      return;
+    }
+
+    try {
+      setIsRequestingActivation(true);
+      setErrorMessage("");
+      setInfoMessage("");
+      setDevActivationLink("");
+
+      const response = await fetch(`${API_PREFIX}/auth/request-activation`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const result = await readJsonSafely(response);
+      if (!response.ok) {
+        throw new Error(
+          result?.error ||
+            `Could not request activation link (HTTP ${response.status})`,
+        );
+      }
+
+      if (result?.data?.alreadyActive) {
+        setInfoMessage(
+          result?.data?.message ||
+            "This account is already active. Please sign in with your password.",
+        );
+      } else {
+        setInfoMessage(result?.data?.message || "Activation email sent.");
+      }
+      setDevActivationLink(result?.data?.devActivationLink || "");
+    } catch (error) {
+      setErrorMessage(error.message || "Could not request activation link.");
+    } finally {
+      setIsRequestingActivation(false);
     }
   }
 
@@ -86,9 +159,26 @@ function SignIn({ isAuthenticated, onLogin, isCheckingSession }) {
         </p>
 
         {errorMessage && <p className="auth-error">{errorMessage}</p>}
+        {infoMessage && <p className="auth-success">{infoMessage}</p>}
+        {devActivationLink && (
+          <p className="auth-success">
+            Development activation link:{" "}
+            <a href={devActivationLink}>{devActivationLink}</a>
+          </p>
+        )}
 
         <button type="submit" disabled={isSubmitting || isCheckingSession}>
           {isSubmitting ? "Signing in..." : "Sign In"}
+        </button>
+        <button
+          type="button"
+          className="auth-secondary-button"
+          onClick={handleRequestActivationLink}
+          disabled={isRequestingActivation || isCheckingSession}
+        >
+          {isRequestingActivation
+            ? "Sending activation link..."
+            : "Send activation link"}
         </button>
       </form>
     </section>

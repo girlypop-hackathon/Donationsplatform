@@ -1,0 +1,49 @@
+##
+# /*
+# Oprettet: 18-03-2026
+# Af: Jonas og GitHub Copilot (GPT-5.3-codex)
+# Beskrivelse: Node compatibility checks for the donation platform
+# */
+##
+name: Node Compatibility
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+on:
+  push:
+    branches:
+      - main
+      - Developer
+  pull_request:
+    branches:
+      - main
+      - Developer
+
+jobs:
+  node-compatibility:
+    name: Node ${{ matrix.node-version }} Compatibility
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [20, 24]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run lint
+        run: npm run lint
+
+      - name: Run tests
+        run: npm test

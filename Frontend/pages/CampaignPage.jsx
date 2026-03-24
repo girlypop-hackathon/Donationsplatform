@@ -1,16 +1,39 @@
+/*
+Oprettet: 18-03-2026
+Af: Linea og Mistral Vibe
+Beskrivelse: Kampagneside med donationstrin og billedvisning
+*/
+
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import ProgressBar from "../components/ProgressBar";
+import {
+  applyImageFallbackOnce,
+  createImagePlaceholderDataUri,
+  resolveCampaignImageSource,
+} from "../utils/imagePaths";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 const API_PREFIX = API_BASE_URL ? `${API_BASE_URL}/api` : "/api";
 const PRESET_AMOUNTS = [50, 100, 250, 500];
+const DONATION_FREQUENCIES = {
+  ONE_TIME: "one_time",
+  MONTHLY: "monthly",
+};
+const FALLBACK_IMAGE_URL = resolveCampaignImageSource(
+  "",
+  "fundtogether-logo.png",
+);
+const BACKUP_FALLBACK_IMAGE_URL = createImagePlaceholderDataUri("Campaign");
 
 function CampaignPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [campaign, setCampaign] = useState(null);
   const [donations, setDonations] = useState([]);
+  const [donationFrequency, setDonationFrequency] = useState(
+    DONATION_FREQUENCIES.ONE_TIME,
+  );
   const [selectedPreset, setSelectedPreset] = useState(null);
   const [customAmount, setCustomAmount] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -98,11 +121,15 @@ function CampaignPage() {
   function handleDonate() {
     if (!hasValidAmount) return;
 
-    navigate(`/campaign/${id}/payment?amount=${selectedAmount}`, {
-      state: {
-        amount: selectedAmount,
+    navigate(
+      `/campaign/${id}/payment?amount=${selectedAmount}&frequency=${donationFrequency}`,
+      {
+        state: {
+          amount: selectedAmount,
+          donationFrequency,
+        },
       },
-    });
+    );
   }
 
   if (isLoading) {
@@ -122,15 +149,17 @@ function CampaignPage() {
   return (
     <div className="campaign-page">
       <img
-        src={
-          campaign.image
-            ? campaign.image
-            : "https://placehold.co/800x400?text=Campaign"
-        }
+        src={resolveCampaignImageSource(
+          campaign.image,
+          "fundtogether-logo.png",
+        )}
         alt={campaign.campaign_bio || "campaign"}
         onError={(event) => {
-          event.currentTarget.src =
-            "https://placehold.co/800x400?text=Campaign";
+          applyImageFallbackOnce(
+            event,
+            FALLBACK_IMAGE_URL,
+            BACKUP_FALLBACK_IMAGE_URL,
+          );
         }}
       />
       <h1>{`${campaign.campaign_bio}`}</h1>
@@ -140,11 +169,44 @@ function CampaignPage() {
 
       <p>{campaign.body_text || "No description available yet."}</p>
 
+      {campaign.deadline && (
+        <p className="campaign-deadline">
+          Campaign deadline:{" "}
+          {new Date(campaign.deadline).toLocaleDateString("da-DK")}
+        </p>
+      )}
+
       <ProgressBar value={raisedAmount} max={goalAmount} />
       <h3>{`Raised: ${raisedAmount} / Goal: ${goalAmount} DKK`}</h3>
 
       <div className="donation-box">
         <h3>Donate</h3>
+        <div
+          className="donation-frequency-buttons"
+          role="radiogroup"
+          aria-label="Payment type"
+        >
+          <button
+            type="button"
+            className={`preset-btn donation-type-btn ${donationFrequency === DONATION_FREQUENCIES.ONE_TIME ? "active" : ""}`}
+            onClick={() => {
+              setDonationFrequency(DONATION_FREQUENCIES.ONE_TIME);
+            }}
+            aria-pressed={donationFrequency === DONATION_FREQUENCIES.ONE_TIME}
+          >
+            Engangsbeløb
+          </button>
+          <button
+            type="button"
+            className={`preset-btn donation-type-btn ${donationFrequency === DONATION_FREQUENCIES.MONTHLY ? "active" : ""}`}
+            onClick={() => {
+              setDonationFrequency(DONATION_FREQUENCIES.MONTHLY);
+            }}
+            aria-pressed={donationFrequency === DONATION_FREQUENCIES.MONTHLY}
+          >
+            Fast månedligt beløb
+          </button>
+        </div>
 
         <div className="preset-donations">
           {PRESET_AMOUNTS.map((amount) => (
@@ -173,7 +235,12 @@ function CampaignPage() {
           <p className="selected-donation">{`Selected donation: ${selectedAmount} DKK`}</p>
         )}
 
-        <button type="button" disabled={!hasValidAmount} onClick={handleDonate}>
+        <button
+          type="button"
+          disabled={!hasValidAmount}
+          onClick={handleDonate}
+          id="continue-to-payment-btn"
+        >
           Continue to payment
         </button>
       </div>

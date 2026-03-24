@@ -1,4 +1,10 @@
-import React, { useMemo, useState } from "react";
+/*
+Oprettet: 24-03-2026
+Af: Jonas og GPT-5.3-codex
+Beskrivelse: API endpoints for the donation platform
+*/
+
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Link,
   useLocation,
@@ -11,12 +17,22 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 const API_PREFIX = API_BASE_URL ? `${API_BASE_URL}/api` : "/api";
 
 // Creates the initial payment form values, optionally prefilled with a selected amount.
-function createInitialPaymentForm(initialAmount) {
+function createInitialPaymentForm(
+  initialAmount,
+  initialFrequency = "one_time",
+) {
+  const normalizedFrequency =
+    initialFrequency === "monthly" ? "monthly" : "one_time";
+
   return {
     userName: "",
     email: "",
     accountNumber: "",
-    isSubscription: false,
+    cprNumber: "",
+    isAnonymousDonation: false,
+    taxDeduction: false,
+    cprNumber: "",
+    donationFrequency: normalizedFrequency,
     amount: initialAmount > 0 ? String(initialAmount) : "",
     generalNewsletter: false,
   };
@@ -44,8 +60,22 @@ function PaymentPage() {
     return 0;
   }, [location.state, searchParams]);
 
+  const selectedFrequency = useMemo(() => {
+    const frequencyFromState = location.state?.donationFrequency;
+    if (frequencyFromState === "monthly" || frequencyFromState === "one_time") {
+      return frequencyFromState;
+    }
+
+    const frequencyFromQuery = searchParams.get("frequency");
+    if (frequencyFromQuery === "monthly" || frequencyFromQuery === "one_time") {
+      return frequencyFromQuery;
+    }
+
+    return "one_time";
+  }, [location.state, searchParams]);
+
   const [paymentForm, setPaymentForm] = useState(() =>
-    createInitialPaymentForm(selectedAmount),
+    createInitialPaymentForm(selectedAmount, selectedFrequency),
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
@@ -53,6 +83,25 @@ function PaymentPage() {
 
   const campaignId = Number(id);
   const amountValue = Number(paymentForm.amount);
+  const shouldDisableCredentialFields = paymentForm.isAnonymousDonation;
+
+  // Keeps selected donation values in sync when navigating from campaign page.
+  useEffect(() => {
+    setPaymentForm((previousPaymentForm) => ({
+      ...previousPaymentForm,
+      donationFrequency: selectedFrequency,
+      amount:
+        selectedAmount > 0
+          ? String(selectedAmount)
+          : previousPaymentForm.amount,
+    }));
+  }, [selectedAmount, selectedFrequency]);
+
+  // Validates that CPR contains exactly 10 digits, ignoring spaces and punctuation.
+  function isValidCprNumber(cprNumber) {
+    const normalizedCprNumber = String(cprNumber || "").replace(/\D/g, "");
+    return normalizedCprNumber.length === 10;
+  }
 
   // Updates text and number input values in the payment form.
   function handleInputChange(event) {
@@ -72,26 +121,77 @@ function PaymentPage() {
     }));
   }
 
+  // Toggles tax deduction and clears CPR field when tax deduction is disabled.
+  function handleTaxDeductionChange(event) {
+    const isChecked = event.target.checked;
+    setPaymentForm((previousPaymentForm) => ({
+      ...previousPaymentForm,
+      taxDeduction: isChecked,
+      cprNumber: isChecked ? previousPaymentForm.cprNumber : "",
+    }));
+  }
+
+  // Toggles anonymous donation and clears personal fields when anonymity is enabled.
+  function handleAnonymousToggle(event) {
+    const isAnonymousDonation = event.target.checked;
+
+    setPaymentForm((previousPaymentForm) => ({
+      ...previousPaymentForm,
+      isAnonymousDonation,
+      userName: isAnonymousDonation ? "" : previousPaymentForm.userName,
+      email: isAnonymousDonation ? "" : previousPaymentForm.email,
+      accountNumber: isAnonymousDonation
+        ? ""
+        : previousPaymentForm.accountNumber,
+      cprNumber: isAnonymousDonation ? "" : previousPaymentForm.cprNumber,
+      taxDeduction: isAnonymousDonation
+        ? false
+        : previousPaymentForm.taxDeduction,
+      cprNumber: isAnonymousDonation ? "" : previousPaymentForm.cprNumber,
+      generalNewsletter: isAnonymousDonation
+        ? false
+        : previousPaymentForm.generalNewsletter,
+    }));
+  }
+
   // Validates required payment form fields before submission.
   function validatePaymentForm() {
     if (!Number.isFinite(campaignId) || campaignId <= 0) {
       return "Invalid campaign id.";
     }
 
-    if (paymentForm.userName.trim().length < 2) {
-      return "Please enter your name.";
-    }
+    if (!paymentForm.isAnonymousDonation) {
+      if (paymentForm.userName.trim().length < 2) {
+        return "Please enter your name.";
+      }
 
-    if (!paymentForm.email.includes("@")) {
-      return "Please enter a valid email.";
-    }
+      if (!paymentForm.email.includes("@")) {
+        return "Please enter a valid email.";
+      }
 
-    if (paymentForm.accountNumber.trim().length < 3) {
-      return "Please enter a valid account number.";
+      if (paymentForm.accountNumber.trim().length < 3) {
+        return "Please enter a valid account number.";
+      }
+
+      if (
+        paymentForm.taxDeduction &&
+        !isValidCprNumber(paymentForm.cprNumber)
+      ) {
+        return "Please enter a valid CPR number (10 digits).";
+      }
     }
 
     if (!Number.isFinite(amountValue) || amountValue <= 0) {
       return "Please enter a valid amount.";
+    }
+
+    if (paymentForm.taxDeduction) {
+      const normalizedCpr = paymentForm.cprNumber.replace(/\s+/g, "");
+      const isValidCpr = /^\d{6}-?\d{4}$/.test(normalizedCpr);
+
+      if (!isValidCpr) {
+        return "Please enter a valid CPR number (DDMMYY-XXXX).";
+      }
     }
 
     return "";
@@ -119,11 +219,22 @@ function PaymentPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          user_name: paymentForm.userName.trim(),
-          email: paymentForm.email.trim(),
-          account_number: paymentForm.accountNumber.trim(),
-          is_subscription: paymentForm.isSubscription,
+          user_name: paymentForm.isAnonymousDonation
+            ? "Anonymous"
+            : paymentForm.userName.trim(),
+          email: paymentForm.isAnonymousDonation
+            ? "Anonymous"
+            : paymentForm.email.trim(),
+          account_number: paymentForm.isAnonymousDonation
+            ? "Anonymous"
+            : paymentForm.accountNumber.trim(),
+          anonymous_donation: paymentForm.isAnonymousDonation,
+          tax_deduction: paymentForm.taxDeduction,
+          cpr_number: paymentForm.taxDeduction
+            ? paymentForm.cprNumber.replace(/\s+/g, "")
+            : null,
           amount: amountValue,
+          is_subscription: paymentForm.donationFrequency === "monthly",
           general_newsletter: paymentForm.generalNewsletter,
         }),
       });
@@ -160,6 +271,62 @@ function PaymentPage() {
           disabled
         />
 
+        <label className="payment-checkbox">
+          <input
+            name="isAnonymousDonation"
+            type="checkbox"
+            checked={paymentForm.isAnonymousDonation}
+            onChange={handleAnonymousToggle}
+          />
+          Make this donation anonymous
+        </label>
+
+        <fieldset className="payment-frequency-group payment-frequency-highlight">
+          <legend>Choose payment type</legend>
+          <p className="payment-frequency-intro">
+            Pick how you want to support this campaign.
+          </p>
+          <label
+            className="payment-frequency-option"
+            htmlFor="frequency-one-time"
+          >
+            <input
+              id="frequency-one-time"
+              name="donationFrequency"
+              type="radio"
+              value="one_time"
+              checked={paymentForm.donationFrequency === "one_time"}
+              onChange={handleInputChange}
+            />
+            <span>Single payment</span>
+          </label>
+          <label
+            className="payment-frequency-option"
+            htmlFor="frequency-monthly"
+          >
+            <input
+              id="frequency-monthly"
+              name="donationFrequency"
+              type="radio"
+              value="monthly"
+              checked={paymentForm.donationFrequency === "monthly"}
+              onChange={handleInputChange}
+            />
+            <span>Monthly fixed payment</span>
+          </label>
+        </fieldset>
+
+        <label htmlFor="amount">Amount (DKK)</label>
+        <input
+          id="amount"
+          name="amount"
+          type="number"
+          min="1"
+          value={paymentForm.amount}
+          onChange={handleInputChange}
+          required
+        />
+
         <label htmlFor="userName">Name</label>
         <input
           id="userName"
@@ -167,7 +334,11 @@ function PaymentPage() {
           type="text"
           value={paymentForm.userName}
           onChange={handleInputChange}
-          required
+          required={!paymentForm.isAnonymousDonation}
+          disabled={shouldDisableCredentialFields}
+          className={
+            shouldDisableCredentialFields ? "payment-input-disabled" : ""
+          }
         />
 
         <label htmlFor="email">Email</label>
@@ -177,7 +348,11 @@ function PaymentPage() {
           type="email"
           value={paymentForm.email}
           onChange={handleInputChange}
-          required
+          required={!paymentForm.isAnonymousDonation}
+          disabled={shouldDisableCredentialFields}
+          className={
+            shouldDisableCredentialFields ? "payment-input-disabled" : ""
+          }
         />
 
         <label htmlFor="accountNumber">Account number</label>
@@ -187,8 +362,43 @@ function PaymentPage() {
           type="text"
           value={paymentForm.accountNumber}
           onChange={handleInputChange}
-          required
+          required={!paymentForm.isAnonymousDonation}
+          disabled={shouldDisableCredentialFields}
+          className={
+            shouldDisableCredentialFields ? "payment-input-disabled" : ""
+          }
         />
+
+        <label className="payment-checkbox">
+          <input
+            name="taxDeduction"
+            type="checkbox"
+            checked={paymentForm.taxDeduction}
+            onChange={handleTaxDeductionChange}
+            disabled={paymentForm.isAnonymousDonation}
+          />
+          Tax deduction
+        </label>
+
+        {paymentForm.taxDeduction && !paymentForm.isAnonymousDonation && (
+          <>
+            <label htmlFor="cprNumber">CPR-nummer</label>
+            <input
+              id="cprNumber"
+              name="cprNumber"
+              type="text"
+              placeholder="DDMMYY-XXXX"
+              value={paymentForm.cprNumber}
+              onChange={handleInputChange}
+              required={paymentForm.taxDeduction}
+              inputMode="numeric"
+              disabled={shouldDisableCredentialFields}
+              className={
+                shouldDisableCredentialFields ? "payment-input-disabled" : ""
+              }
+            />
+          </>
+        )}
 
         <label htmlFor="amount">Amount (DKK)</label>
         <input
@@ -207,6 +417,7 @@ function PaymentPage() {
             type="checkbox"
             checked={paymentForm.isSubscription}
             onChange={handleCheckboxChange}
+            disabled={paymentForm.isAnonymousDonation}
           />
           Receive campaign updates
         </label>
@@ -217,6 +428,7 @@ function PaymentPage() {
             type="checkbox"
             checked={paymentForm.generalNewsletter}
             onChange={handleCheckboxChange}
+            disabled={paymentForm.isAnonymousDonation}
           />
           Subscribe to newsletter
         </label>
@@ -232,6 +444,15 @@ function PaymentPage() {
             Back to campaign
           </Link>
         </div>
+
+        <p className="payment-privacy-note">
+          Ved at fortsætte accepterer du vores behandling af personoplysninger.
+          Læs mere i vores{" "}
+          <Link to="/info#persondata" className="payment-privacy-link">
+            persondatapolitik og samtykkeinfo
+          </Link>
+          .
+        </p>
       </form>
     </section>
   );
