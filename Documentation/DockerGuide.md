@@ -1,6 +1,7 @@
 # Docker Guide - Start VM and run website
 
 This guide shows how to:
+
 1. Start the Azure VM
 2. Connect with SSH
 3. Pull and run the latest Docker image from GHCR
@@ -16,6 +17,7 @@ cd Scripts
 ```
 
 What this script does:
+
 - Logs in to Azure
 - Starts VM `donationsplatform-vm`
 - Opens ports `22`, `80`, `443`
@@ -88,14 +90,17 @@ docker image prune -f
 ## Troubleshooting
 
 ### Port 80 is not reachable
+
 - Confirm NSG/VM ports are open (script opens 22/80/443).
 - Verify container is running: `docker ps`
 
 ### GHCR login fails
+
 - Confirm token has `read:packages`.
 - Confirm username is correct (`girlypop-hackathon`).
 
 ### Container exits immediately
+
 - Check logs: `docker logs app`
 - Re-run with latest image:
   - `docker pull ghcr.io/girlypop-hackathon/donationsplatform:latest`

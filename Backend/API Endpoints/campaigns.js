@@ -358,12 +358,10 @@ router.put(
       }
 
       if (Number(existingCampaign.created_by_user_id) !== userId) {
-        response
-          .status(403)
-          .json({
-            success: false,
-            error: "You are not allowed to edit this campaign",
-          });
+        response.status(403).json({
+          success: false,
+          error: "You are not allowed to edit this campaign",
+        });
         return;
       }
 
@@ -388,12 +386,10 @@ router.put(
         request.body.goal_amount ?? existingCampaign.goal_amount ?? 0,
       );
       if (!Number.isFinite(parsedGoalAmount) || parsedGoalAmount <= 0) {
-        response
-          .status(400)
-          .json({
-            success: false,
-            error: "goal_amount must be a positive number",
-          });
+        response.status(400).json({
+          success: false,
+          error: "goal_amount must be a positive number",
+        });
         return;
       }
 
@@ -497,12 +493,10 @@ router.delete(
       }
 
       if (Number(existingCampaign.created_by_user_id) !== userId) {
-        response
-          .status(403)
-          .json({
-            success: false,
-            error: "You are not allowed to delete this campaign",
-          });
+        response.status(403).json({
+          success: false,
+          error: "You are not allowed to delete this campaign",
+        });
         return;
       }
 
