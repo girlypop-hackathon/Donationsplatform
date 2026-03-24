@@ -11,6 +11,7 @@ Note: this file needs cleanup regarding to many tests for provider_id - check if
 const express = require("express");
 const sqlite3 = require("sqlite3").verbose();
 const path = require("path");
+const fs = require("fs");
 const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
@@ -1214,6 +1215,21 @@ app.use(campaignsEndpoints.router);
 app.use(donationsEndpoints.router);
 app.use(campaignEventsEndpoints.router);
 app.use(newslettersEndpoints.router);
+
+const frontendDistPath = path.join(__dirname, "public");
+const frontendIndexPath = path.join(frontendDistPath, "index.html");
+const hasFrontendBuild = fs.existsSync(frontendIndexPath);
+
+if (hasFrontendBuild) {
+  app.use(express.static(frontendDistPath));
+
+  // Keep API routes above, then serve SPA for all remaining non-API requests.
+  app.get(/^\/(?!api).*/, (_request, response) => {
+    response.sendFile(frontendIndexPath);
+  });
+} else {
+  console.log("No frontend build found at Backend/public; serving API only.");
+}
 
 // Start server
 app.listen(PORT, () => {
