@@ -166,6 +166,8 @@ router.get("/api/campaigns/:id", async (request, response) => {
 router.post("/api/campaigns", async (req, res) => {
   const {
     provider_id,
+    provider_name,
+    is_private_provider,
     image,
     campaign_bio,
     body_text,
@@ -174,16 +176,17 @@ router.post("/api/campaigns", async (req, res) => {
     milestone_1,
     milestone_2,
     milestone_3,
+    deadline,
     creator_name,
     creator_email,
   } = req.body;
 
-  if (!provider_id || !campaign_bio || !goal_amount || !creator_email) {
+  if (!campaign_bio || !goal_amount || !creator_email) {
     return res
       .status(400)
       .json({
         error:
-          "provider_id, campaign_bio, goal_amount and creator_email are required",
+          "campaign_bio, goal_amount and creator_email are required",
       });
   }
 
@@ -192,6 +195,19 @@ router.post("/api/campaigns", async (req, res) => {
   }
 
   try {
+    const resolvedProviderId = await resolveProviderIdForCampaignCreation({
+      providerId: provider_id,
+      providerName: provider_name,
+      isPrivateProvider: Boolean(is_private_provider),
+    });
+
+    if (!resolvedProviderId) {
+      return res.status(400).json({
+        error:
+          "Choose an existing provider, select Private, or enter an organization name.",
+      });
+    }
+
     const userResult = await authHelpers.findOrCreateUserForEmail({
       email: creator_email,
       name: creator_name,
@@ -216,7 +232,7 @@ router.post("/api/campaigns", async (req, res) => {
         created_by_user_id
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        provider_id,
+        resolvedProviderId,
         image,
         campaign_bio,
         body_text,
@@ -238,7 +254,7 @@ router.post("/api/campaigns", async (req, res) => {
       success: true,
       data: {
         campaign_id: insertResult.lastId,
-        provider_id,
+        provider_id: resolvedProviderId,
         image,
         campaign_bio,
         body_text,
@@ -255,6 +271,220 @@ router.post("/api/campaigns", async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 });
+
+async function resolveProviderIdForCampaignCreation({
+  providerId,
+  providerName,
+  isPrivateProvider,
+}) {
+  const parsedProviderId = Number(providerId);
+  if (Number.isFinite(parsedProviderId) && parsedProviderId > 0) {
+    const existingProvider = await getSingleRow(
+      "SELECT organization_id FROM providers WHERE organization_id = ?",
+      [parsedProviderId],
+    );
+    if (existingProvider?.organization_id) {
+      return existingProvider.organization_id;
+    }
+  }
+
+  const normalizedProviderName = String(providerName || "").trim();
+  const targetProviderName = isPrivateProvider
+    ? "Private"
+    : normalizedProviderName;
+
+  if (!targetProviderName) {
+    return null;
+  }
+
+  const existingProviderByName = await getSingleRow(
+    "SELECT organization_id FROM providers WHERE LOWER(TRIM(name)) = LOWER(TRIM(?)) LIMIT 1",
+    [targetProviderName],
+  );
+  if (existingProviderByName?.organization_id) {
+    return existingProviderByName.organization_id;
+  }
+
+  const providerInsertResult = await runQuery(
+    `INSERT INTO providers (name, logo, bio, website_link, is_organization)
+     VALUES (?, ?, ?, ?, ?)`,
+    [
+      targetProviderName,
+      "",
+      isPrivateProvider
+        ? "Private campaign by an individual"
+        : "User-created organization",
+      "",
+      isPrivateProvider ? 0 : 1,
+    ],
+  );
+
+  return providerInsertResult.lastId;
+}
+
+// PUT update campaign by owner
+router.put("/api/users/:userId/campaigns/:campaignId", async (request, response) => {
+  try {
+    const userId = Number(request.params.userId);
+    const campaignId = Number(request.params.campaignId);
+
+    if (!Number.isFinite(userId) || userId <= 0) {
+      response.status(400).json({ success: false, error: "Valid user id is required" });
+      return;
+    }
+
+    if (!Number.isFinite(campaignId) || campaignId <= 0) {
+      response.status(400).json({ success: false, error: "Valid campaign id is required" });
+      return;
+    }
+
+    const existingCampaign = await getSingleRow(
+      "SELECT * FROM campaigns WHERE campaign_id = ?",
+      [campaignId],
+    );
+
+    if (!existingCampaign) {
+      response.status(404).json({ success: false, error: "Campaign not found" });
+      return;
+    }
+
+    if (Number(existingCampaign.created_by_user_id) !== userId) {
+      response
+        .status(403)
+        .json({ success: false, error: "You are not allowed to edit this campaign" });
+      return;
+    }
+
+    const nextCampaignBio = String(
+      request.body.campaign_bio ?? existingCampaign.campaign_bio ?? "",
+    ).trim();
+    const nextBodyText = String(
+      request.body.body_text ?? existingCampaign.body_text ?? "",
+    ).trim();
+    const nextImage = String(request.body.image ?? existingCampaign.image ?? "").trim();
+    const nextDeadline = String(request.body.deadline ?? existingCampaign.deadline ?? "").trim();
+
+    const parsedGoalAmount = Number(
+      request.body.goal_amount ?? existingCampaign.goal_amount ?? 0,
+    );
+    if (!Number.isFinite(parsedGoalAmount) || parsedGoalAmount <= 0) {
+      response
+        .status(400)
+        .json({ success: false, error: "goal_amount must be a positive number" });
+      return;
+    }
+
+    if (!nextCampaignBio) {
+      response
+        .status(400)
+        .json({ success: false, error: "campaign_bio is required" });
+      return;
+    }
+
+    const parsedProviderId = Number(
+      request.body.provider_id ?? existingCampaign.provider_id,
+    );
+    const nextProviderId = Number.isFinite(parsedProviderId) && parsedProviderId > 0
+      ? parsedProviderId
+      : existingCampaign.provider_id;
+
+    const milestoneOne = request.body.milestone_1 ?? existingCampaign.milestone_1 ?? null;
+    const milestoneTwo = request.body.milestone_2 ?? existingCampaign.milestone_2 ?? null;
+    const milestoneThree = request.body.milestone_3 ?? existingCampaign.milestone_3 ?? null;
+
+    await runQuery(
+      `UPDATE campaigns
+       SET provider_id = ?,
+           image = ?,
+           campaign_bio = ?,
+           body_text = ?,
+           goal_amount = ?,
+           milestone_1 = ?,
+           milestone_2 = ?,
+           milestone_3 = ?,
+           deadline = ?
+       WHERE campaign_id = ?`,
+      [
+        nextProviderId,
+        nextImage,
+        nextCampaignBio,
+        nextBodyText,
+        parsedGoalAmount,
+        milestoneOne,
+        milestoneTwo,
+        milestoneThree,
+        nextDeadline || null,
+        campaignId,
+      ],
+    );
+
+    const updatedCampaign = await getSingleRow(queries.getCampaignWithProviderName, [
+      campaignId,
+    ]);
+
+    response.json({
+      success: true,
+      data: updatedCampaign,
+    });
+  } catch (error) {
+    response.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// DELETE campaign by owner
+router.delete(
+  "/api/users/:userId/campaigns/:campaignId",
+  async (request, response) => {
+    try {
+      const userId = Number(request.params.userId);
+      const campaignId = Number(request.params.campaignId);
+
+      if (!Number.isFinite(userId) || userId <= 0) {
+        response.status(400).json({ success: false, error: "Valid user id is required" });
+        return;
+      }
+
+      if (!Number.isFinite(campaignId) || campaignId <= 0) {
+        response.status(400).json({ success: false, error: "Valid campaign id is required" });
+        return;
+      }
+
+      const existingCampaign = await getSingleRow(
+        "SELECT campaign_id, created_by_user_id FROM campaigns WHERE campaign_id = ?",
+        [campaignId],
+      );
+
+      if (!existingCampaign) {
+        response.status(404).json({ success: false, error: "Campaign not found" });
+        return;
+      }
+
+      if (Number(existingCampaign.created_by_user_id) !== userId) {
+        response
+          .status(403)
+          .json({ success: false, error: "You are not allowed to delete this campaign" });
+        return;
+      }
+
+      await runQuery("DELETE FROM campaign_events WHERE campaign_id = ?", [campaignId]);
+      await runQuery("DELETE FROM donations WHERE campaign_id = ?", [campaignId]);
+
+      const deleteResult = await runQuery(
+        "DELETE FROM campaigns WHERE campaign_id = ? AND created_by_user_id = ?",
+        [campaignId, userId],
+      );
+
+      if (!deleteResult.changes) {
+        response.status(404).json({ success: false, error: "Campaign not found" });
+        return;
+      }
+
+      response.json({ success: true, data: { campaignId } });
+    } catch (error) {
+      response.status(500).json({ success: false, error: error.message });
+    }
+  },
+);
 
 function runQuery(queryText, queryParams = []) {
   return new Promise((resolve, reject) => {

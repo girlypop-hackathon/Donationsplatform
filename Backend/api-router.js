@@ -46,10 +46,12 @@ const db = new sqlite3.Database(databasePath, (err) => {
     console.log("Connected to the donations database.");
     ensureProviderIdColumn(() => {
       ensureAmountRaisedColumn(() => {
-        ensureDonationCreatedAtColumn(() => {
-          ensureUsersTable(() => {
-            ensureUserLinkColumns(() => {
-              ensureActivationTokensTable();
+        ensureCampaignDeadlineColumn(() => {
+          ensureDonationCreatedAtColumn(() => {
+            ensureUsersTable(() => {
+              ensureUserLinkColumns(() => {
+                ensureActivationTokensTable();
+              });
             });
           });
         });
@@ -140,6 +142,34 @@ function ensureProviderIdColumn(onDone) {
         },
       );
     }
+  });
+}
+
+function ensureCampaignDeadlineColumn(onDone) {
+  db.all("PRAGMA table_info(campaigns)", [], (err, columns) => {
+    if (err) {
+      console.error("Could not inspect campaigns table for deadline:", err.message);
+      if (onDone) onDone();
+      return;
+    }
+
+    if (columns.length === 0) {
+      if (onDone) onDone();
+      return;
+    }
+
+    const hasDeadline = columns.some((column) => column.name === "deadline");
+    if (hasDeadline) {
+      if (onDone) onDone();
+      return;
+    }
+
+    db.run("ALTER TABLE campaigns ADD COLUMN deadline TEXT", (alterErr) => {
+      if (alterErr) {
+        console.error("Could not add campaigns.deadline column:", alterErr.message);
+      }
+      if (onDone) onDone();
+    });
   });
 }
 
@@ -523,6 +553,53 @@ function hashActivationToken(plainToken) {
   return crypto.createHash("sha256").update(plainToken).digest("hex");
 }
 
+function normalizeActivationTokenInput(rawTokenInput) {
+  let normalizedTokenValue = String(rawTokenInput || "").trim();
+
+  if (!normalizedTokenValue) {
+    return "";
+  }
+
+  // Remove wrapping quotes/angle brackets commonly added by terminals or mail clients.
+  normalizedTokenValue = normalizedTokenValue.replace(/^['"<\s]+|['">\s]+$/g, "");
+
+  // If a full URL is provided instead of raw token, extract token query value.
+  if (normalizedTokenValue.includes("token=")) {
+    try {
+      const parsedUrl = new URL(normalizedTokenValue);
+      const tokenFromQuery = String(parsedUrl.searchParams.get("token") || "").trim();
+      if (tokenFromQuery) {
+        normalizedTokenValue = tokenFromQuery;
+      }
+    } catch (_error) {
+      const tokenMatch = normalizedTokenValue.match(/[?&]token=([^&]+)/i);
+      if (tokenMatch?.[1]) {
+        normalizedTokenValue = tokenMatch[1];
+      }
+    }
+  }
+
+  try {
+    normalizedTokenValue = decodeURIComponent(normalizedTokenValue);
+  } catch (_error) {
+    // Keep original token if decoding fails.
+  }
+
+  // Strip accidental trailing punctuation from copied links.
+  normalizedTokenValue = normalizedTokenValue.replace(/[\s.,;:!?]+$/, "");
+
+  // Extract token when input contains additional noise (line wraps, labels, etc.).
+  const hexTokenMatch = normalizedTokenValue.match(/[a-fA-F0-9]{64}/);
+  if (hexTokenMatch?.[0]) {
+    normalizedTokenValue = hexTokenMatch[0];
+  }
+
+  // Generated tokens are hex strings; normalize to lowercase for robust matching.
+  normalizedTokenValue = normalizedTokenValue.toLowerCase();
+
+  return normalizedTokenValue;
+}
+
 function createActivationUrl(plainToken) {
   const normalizedBase = FRONTEND_PUBLIC_URL.replace(/\/$/, "");
   return `${normalizedBase}/activate?token=${encodeURIComponent(plainToken)}`;
@@ -815,7 +892,7 @@ app.post("/api/auth/request-activation", async (request, response) => {
 
 app.post("/api/auth/activate", async (request, response) => {
   try {
-    const plainToken = String(request.body.token || "").trim();
+    const plainToken = normalizeActivationTokenInput(request.body.token);
     const password = String(request.body.password || "");
     const displayName = String(request.body.name || "").trim();
 
@@ -967,6 +1044,101 @@ app.get("/api/auth/me", async (request, response) => {
       success: true,
       data: {
         user: buildPublicUser(userRow),
+      },
+    });
+  } catch (error) {
+    response.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+app.put("/api/auth/profile", async (request, response) => {
+  try {
+    const token = extractBearerToken(request);
+    if (!token) {
+      response.status(401).json({
+        success: false,
+        error: "Authorization token is required",
+      });
+      return;
+    }
+
+    if (revokedTokens.has(token)) {
+      response.status(401).json({
+        success: false,
+        error: "Token has been logged out",
+      });
+      return;
+    }
+
+    const tokenPayload = verifyToken(token);
+    if (!tokenPayload || !tokenPayload.sub) {
+      response.status(401).json({
+        success: false,
+        error: "Invalid or expired token",
+      });
+      return;
+    }
+
+    const currentUser = await getSingleRow(
+      "SELECT * FROM users WHERE user_id = ?",
+      [tokenPayload.sub],
+    );
+    if (!currentUser) {
+      response.status(401).json({
+        success: false,
+        error: "User not found",
+      });
+      return;
+    }
+
+    const nextName = String(request.body?.name || "").trim();
+    const nextEmail = normalizeEmail(request.body?.email);
+
+    if (!nextName || nextName.length < 2) {
+      response.status(400).json({
+        success: false,
+        error: "Name must be at least 2 characters",
+      });
+      return;
+    }
+
+    if (!isValidEmail(nextEmail)) {
+      response.status(400).json({
+        success: false,
+        error: "A valid email is required",
+      });
+      return;
+    }
+
+    const duplicateUser = await getSingleRow(
+      "SELECT user_id FROM users WHERE email = ? AND user_id != ? LIMIT 1",
+      [nextEmail, currentUser.user_id],
+    );
+    if (duplicateUser) {
+      response.status(409).json({
+        success: false,
+        error: "Email is already in use",
+      });
+      return;
+    }
+
+    await runQuery(
+      "UPDATE users SET name = ?, email = ? WHERE user_id = ?",
+      [nextName, nextEmail, currentUser.user_id],
+    );
+
+    const updatedUser = await getSingleRow(
+      "SELECT * FROM users WHERE user_id = ?",
+      [currentUser.user_id],
+    );
+
+    response.json({
+      success: true,
+      data: {
+        user: buildPublicUser(updatedUser),
       },
     });
   } catch (error) {

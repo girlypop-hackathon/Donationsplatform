@@ -4,6 +4,20 @@ import { Navigate, useNavigate } from "react-router-dom";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 const API_PREFIX = API_BASE_URL ? `${API_BASE_URL}/api` : "/api";
 
+async function readJsonSafely(response) {
+  const rawBody = await response.text();
+
+  if (!rawBody) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(rawBody);
+  } catch (_error) {
+    return {};
+  }
+}
+
 function SignIn({ isAuthenticated, onLogin, isCheckingSession }) {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -40,10 +54,10 @@ function SignIn({ isAuthenticated, onLogin, isCheckingSession }) {
         }),
       });
 
-      const result = await response.json();
+      const result = await readJsonSafely(response);
 
       if (!response.ok || !result?.data?.token || !result?.data?.user) {
-        throw new Error(result?.error || "Login failed");
+        throw new Error(result?.error || `Login failed (HTTP ${response.status})`);
       }
 
       await onLogin(result.data.token, result.data.user);
@@ -75,9 +89,12 @@ function SignIn({ isAuthenticated, onLogin, isCheckingSession }) {
         body: JSON.stringify({ email }),
       });
 
-      const result = await response.json();
+      const result = await readJsonSafely(response);
       if (!response.ok) {
-        throw new Error(result?.error || "Could not request activation link");
+        throw new Error(
+          result?.error ||
+            `Could not request activation link (HTTP ${response.status})`,
+        );
       }
 
       if (result?.data?.alreadyActive) {
@@ -144,6 +161,7 @@ function SignIn({ isAuthenticated, onLogin, isCheckingSession }) {
         </button>
         <button
           type="button"
+          className="auth-secondary-button"
           onClick={handleRequestActivationLink}
           disabled={isRequestingActivation || isCheckingSession}
         >

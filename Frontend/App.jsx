@@ -147,7 +147,11 @@ function App() {
             path="/profile"
             element={
               <ProtectedRoute isAuthenticated={isAuthenticated}>
-                <Profile authUser={authUser} />
+                <Profile
+                  authUser={authUser}
+                  authToken={authToken}
+                  onAuthUserUpdated={setAuthUser}
+                />
               </ProtectedRoute>
             }
           />
