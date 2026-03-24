@@ -1,3 +1,9 @@
+/*
+Oprettet: 24-03-2026
+Af: Jonas og Navn på AI (GPT-5.3-codex)
+Beskrivelse: API endpoints for the donation platform
+*/
+
 import React, { useMemo, useState } from "react";
 import {
   Link,
@@ -16,6 +22,7 @@ function createInitialPaymentForm(initialAmount) {
     userName: '',
     email: '',
     accountNumber: '',
+    cprNumber: '',
     isAnonymousDonation: false,
     taxDeduction: false,
     isSubscription: false,
@@ -57,6 +64,12 @@ function PaymentPage() {
   const amountValue = Number(paymentForm.amount)
   const shouldDisableCredentialFields = paymentForm.isAnonymousDonation
 
+  // Validates that CPR contains exactly 10 digits, ignoring spaces and punctuation.
+  function isValidCprNumber(cprNumber) {
+    const normalizedCprNumber = String(cprNumber || '').replace(/\D/g, '')
+    return normalizedCprNumber.length === 10
+  }
+
   // Updates text and number input values in the payment form.
   function handleInputChange(event) {
     const { name, value } = event.target;
@@ -85,6 +98,7 @@ function PaymentPage() {
       userName: isAnonymousDonation ? '' : previousPaymentForm.userName,
       email: isAnonymousDonation ? '' : previousPaymentForm.email,
       accountNumber: isAnonymousDonation ? '' : previousPaymentForm.accountNumber,
+      cprNumber: isAnonymousDonation ? '' : previousPaymentForm.cprNumber,
       taxDeduction: isAnonymousDonation ? false : previousPaymentForm.taxDeduction,
       isSubscription: isAnonymousDonation ? false : previousPaymentForm.isSubscription,
       generalNewsletter: isAnonymousDonation ? false : previousPaymentForm.generalNewsletter
@@ -108,6 +122,10 @@ function PaymentPage() {
 
       if (paymentForm.accountNumber.trim().length < 3) {
         return 'Please enter a valid account number.'
+      }
+
+      if (paymentForm.taxDeduction && !isValidCprNumber(paymentForm.cprNumber)) {
+        return 'Please enter a valid CPR number (10 digits).'
       }
     }
 
@@ -145,6 +163,7 @@ function PaymentPage() {
           account_number: paymentForm.isAnonymousDonation ? 'Anonymous' : paymentForm.accountNumber.trim(),
           anonymous_donation: paymentForm.isAnonymousDonation,
           tax_deduction: paymentForm.taxDeduction,
+          cpr_number: paymentForm.taxDeduction ? paymentForm.cprNumber.trim() : '',
           is_subscription: paymentForm.isSubscription,
           amount: amountValue,
           general_newsletter: paymentForm.generalNewsletter,
@@ -239,6 +258,24 @@ function PaymentPage() {
           />
           Skattefradrag
         </label>
+
+        {paymentForm.taxDeduction && (
+          <>
+            <label htmlFor='cprNumber'>CPR Number</label>
+            <input
+              id='cprNumber'
+              name='cprNumber'
+              type='text'
+              value={paymentForm.cprNumber}
+              onChange={handleInputChange}
+              required
+              inputMode='numeric'
+              placeholder='DDMMYYXXXX'
+              disabled={shouldDisableCredentialFields}
+              className={shouldDisableCredentialFields ? 'payment-input-disabled' : ''}
+            />
+          </>
+        )}
 
         <label htmlFor='amount'>Amount (DKK)</label>
         <input
