@@ -20,6 +20,7 @@ function createInitialPaymentForm(initialAmount, initialFrequency = 'one_time') 
     accountNumber: '',
     isAnonymousDonation: false,
     taxDeduction: false,
+    cprNumber: '',
     donationFrequency: normalizedFrequency,
     amount: initialAmount > 0 ? String(initialAmount) : "",
     generalNewsletter: false,
@@ -91,6 +92,16 @@ function PaymentPage() {
     }));
   }
 
+  // Toggles tax deduction and clears CPR field when tax deduction is disabled.
+  function handleTaxDeductionChange(event) {
+    const isChecked = event.target.checked;
+    setPaymentForm((previousPaymentForm) => ({
+      ...previousPaymentForm,
+      taxDeduction: isChecked,
+      cprNumber: isChecked ? previousPaymentForm.cprNumber : '',
+    }));
+  }
+
   // Toggles anonymous donation and clears personal fields when anonymity is enabled.
   function handleAnonymousToggle (event) {
     const isAnonymousDonation = event.target.checked
@@ -102,6 +113,7 @@ function PaymentPage() {
       email: isAnonymousDonation ? '' : previousPaymentForm.email,
       accountNumber: isAnonymousDonation ? '' : previousPaymentForm.accountNumber,
       taxDeduction: isAnonymousDonation ? false : previousPaymentForm.taxDeduction,
+      cprNumber: isAnonymousDonation ? '' : previousPaymentForm.cprNumber,
       generalNewsletter: isAnonymousDonation ? false : previousPaymentForm.generalNewsletter
     }))
   }
@@ -128,6 +140,15 @@ function PaymentPage() {
 
     if (!Number.isFinite(amountValue) || amountValue <= 0) {
       return "Please enter a valid amount.";
+    }
+
+    if (paymentForm.taxDeduction) {
+      const normalizedCpr = paymentForm.cprNumber.replace(/\s+/g, '');
+      const isValidCpr = /^\d{6}-?\d{4}$/.test(normalizedCpr);
+
+      if (!isValidCpr) {
+        return 'Please enter a valid CPR number (DDMMYY-XXXX).';
+      }
     }
 
     return "";
@@ -160,6 +181,9 @@ function PaymentPage() {
           account_number: paymentForm.isAnonymousDonation ? 'Anonymous' : paymentForm.accountNumber.trim(),
           anonymous_donation: paymentForm.isAnonymousDonation,
           tax_deduction: paymentForm.taxDeduction,
+          cpr_number: paymentForm.taxDeduction
+            ? paymentForm.cprNumber.replace(/\s+/g, '')
+            : null,
           amount: amountValue,
           is_subscription: paymentForm.donationFrequency === 'monthly',
           general_newsletter: paymentForm.generalNewsletter,
@@ -197,6 +221,16 @@ function PaymentPage() {
           value={Number.isFinite(campaignId) ? campaignId : ""}
           disabled
         />
+
+        <label className='payment-checkbox'>
+          <input
+            name='isAnonymousDonation'
+            type='checkbox'
+            checked={paymentForm.isAnonymousDonation}
+            onChange={handleAnonymousToggle}
+          />
+          Make this donation anonymous
+        </label>
 
         <fieldset className="payment-frequency-group payment-frequency-highlight">
           <legend>Choose payment type</legend>
@@ -274,24 +308,30 @@ function PaymentPage() {
 
         <label className='payment-checkbox'>
           <input
-            name='isAnonymousDonation'
-            type='checkbox'
-            checked={paymentForm.isAnonymousDonation}
-            onChange={handleAnonymousToggle}
-          />
-          Make this donation anonymous
-        </label>
-
-        <label className='payment-checkbox'>
-          <input
             name='taxDeduction'
             type='checkbox'
             checked={paymentForm.taxDeduction}
-            onChange={handleCheckboxChange}
+            onChange={handleTaxDeductionChange}
             disabled={paymentForm.isAnonymousDonation}
           />
-          Skattefradrag
+          Tax deduction
         </label>
+
+        {paymentForm.taxDeduction && !paymentForm.isAnonymousDonation && (
+          <>
+            <label htmlFor="cprNumber">CPR-nummer</label>
+            <input
+              id="cprNumber"
+              name="cprNumber"
+              type="text"
+              placeholder="DDMMYY-XXXX"
+              value={paymentForm.cprNumber}
+              onChange={handleInputChange}
+              required={paymentForm.taxDeduction}
+              inputMode="numeric"
+            />
+          </>
+        )}
 
         <label className="payment-checkbox">
           <input
@@ -315,6 +355,15 @@ function PaymentPage() {
             Back to campaign
           </Link>
         </div>
+
+        <p className="payment-privacy-note">
+          Ved at fortsætte accepterer du vores behandling af personoplysninger.
+          Læs mere i vores{' '}
+          <Link to="/info#persondata" className="payment-privacy-link">
+            persondatapolitik og samtykkeinfo
+          </Link>
+          .
+        </p>
       </form>
     </section>
   );

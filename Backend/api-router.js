@@ -1054,6 +1054,101 @@ app.get("/api/auth/me", async (request, response) => {
   }
 });
 
+app.put("/api/auth/profile", async (request, response) => {
+  try {
+    const token = extractBearerToken(request);
+    if (!token) {
+      response.status(401).json({
+        success: false,
+        error: "Authorization token is required",
+      });
+      return;
+    }
+
+    if (revokedTokens.has(token)) {
+      response.status(401).json({
+        success: false,
+        error: "Token has been logged out",
+      });
+      return;
+    }
+
+    const tokenPayload = verifyToken(token);
+    if (!tokenPayload || !tokenPayload.sub) {
+      response.status(401).json({
+        success: false,
+        error: "Invalid or expired token",
+      });
+      return;
+    }
+
+    const currentUser = await getSingleRow(
+      "SELECT * FROM users WHERE user_id = ?",
+      [tokenPayload.sub],
+    );
+    if (!currentUser) {
+      response.status(401).json({
+        success: false,
+        error: "User not found",
+      });
+      return;
+    }
+
+    const nextName = String(request.body?.name || "").trim();
+    const nextEmail = normalizeEmail(request.body?.email);
+
+    if (!nextName || nextName.length < 2) {
+      response.status(400).json({
+        success: false,
+        error: "Name must be at least 2 characters",
+      });
+      return;
+    }
+
+    if (!isValidEmail(nextEmail)) {
+      response.status(400).json({
+        success: false,
+        error: "A valid email is required",
+      });
+      return;
+    }
+
+    const duplicateUser = await getSingleRow(
+      "SELECT user_id FROM users WHERE email = ? AND user_id != ? LIMIT 1",
+      [nextEmail, currentUser.user_id],
+    );
+    if (duplicateUser) {
+      response.status(409).json({
+        success: false,
+        error: "Email is already in use",
+      });
+      return;
+    }
+
+    await runQuery(
+      "UPDATE users SET name = ?, email = ? WHERE user_id = ?",
+      [nextName, nextEmail, currentUser.user_id],
+    );
+
+    const updatedUser = await getSingleRow(
+      "SELECT * FROM users WHERE user_id = ?",
+      [currentUser.user_id],
+    );
+
+    response.json({
+      success: true,
+      data: {
+        user: buildPublicUser(updatedUser),
+      },
+    });
+  } catch (error) {
+    response.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
 app.post("/api/auth/logout", (request, response) => {
   const token = extractBearerToken(request);
 
