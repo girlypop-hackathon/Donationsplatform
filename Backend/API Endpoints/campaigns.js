@@ -166,6 +166,8 @@ router.get("/api/campaigns/:id", async (request, response) => {
 router.post("/api/campaigns", async (req, res) => {
   const {
     provider_id,
+    provider_name,
+    is_private_provider,
     image,
     campaign_bio,
     body_text,
@@ -179,12 +181,12 @@ router.post("/api/campaigns", async (req, res) => {
     creator_email,
   } = req.body;
 
-  if (!provider_id || !campaign_bio || !goal_amount || !creator_email) {
+  if (!campaign_bio || !goal_amount || !creator_email) {
     return res
       .status(400)
       .json({
         error:
-          "provider_id, campaign_bio, goal_amount and creator_email are required",
+          "campaign_bio, goal_amount and creator_email are required",
       });
   }
 
@@ -193,6 +195,19 @@ router.post("/api/campaigns", async (req, res) => {
   }
 
   try {
+    const resolvedProviderId = await resolveProviderIdForCampaignCreation({
+      providerId: provider_id,
+      providerName: provider_name,
+      isPrivateProvider: Boolean(is_private_provider),
+    });
+
+    if (!resolvedProviderId) {
+      return res.status(400).json({
+        error:
+          "Choose an existing provider, select Private, or enter an organization name.",
+      });
+    }
+
     const userResult = await authHelpers.findOrCreateUserForEmail({
       email: creator_email,
       name: creator_name,
@@ -217,7 +232,7 @@ router.post("/api/campaigns", async (req, res) => {
         created_by_user_id
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        provider_id,
+        resolvedProviderId,
         image,
         campaign_bio,
         body_text,
@@ -239,7 +254,7 @@ router.post("/api/campaigns", async (req, res) => {
       success: true,
       data: {
         campaign_id: insertResult.lastId,
-        provider_id,
+        provider_id: resolvedProviderId,
         image,
         campaign_bio,
         body_text,
@@ -256,6 +271,56 @@ router.post("/api/campaigns", async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 });
+
+async function resolveProviderIdForCampaignCreation({
+  providerId,
+  providerName,
+  isPrivateProvider,
+}) {
+  const parsedProviderId = Number(providerId);
+  if (Number.isFinite(parsedProviderId) && parsedProviderId > 0) {
+    const existingProvider = await getSingleRow(
+      "SELECT organization_id FROM providers WHERE organization_id = ?",
+      [parsedProviderId],
+    );
+    if (existingProvider?.organization_id) {
+      return existingProvider.organization_id;
+    }
+  }
+
+  const normalizedProviderName = String(providerName || "").trim();
+  const targetProviderName = isPrivateProvider
+    ? "Private"
+    : normalizedProviderName;
+
+  if (!targetProviderName) {
+    return null;
+  }
+
+  const existingProviderByName = await getSingleRow(
+    "SELECT organization_id FROM providers WHERE LOWER(TRIM(name)) = LOWER(TRIM(?)) LIMIT 1",
+    [targetProviderName],
+  );
+  if (existingProviderByName?.organization_id) {
+    return existingProviderByName.organization_id;
+  }
+
+  const providerInsertResult = await runQuery(
+    `INSERT INTO providers (name, logo, bio, website_link, is_organization)
+     VALUES (?, ?, ?, ?, ?)`,
+    [
+      targetProviderName,
+      "",
+      isPrivateProvider
+        ? "Private campaign by an individual"
+        : "User-created organization",
+      "",
+      isPrivateProvider ? 0 : 1,
+    ],
+  );
+
+  return providerInsertResult.lastId;
+}
 
 // PUT update campaign by owner
 router.put("/api/users/:userId/campaigns/:campaignId", async (request, response) => {

@@ -161,6 +161,7 @@ function SignIn({ isAuthenticated, onLogin, isCheckingSession }) {
         </button>
         <button
           type="button"
+          className="auth-secondary-button"
           onClick={handleRequestActivationLink}
           disabled={isRequestingActivation || isCheckingSession}
         >

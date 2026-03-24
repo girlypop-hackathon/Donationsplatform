@@ -42,7 +42,7 @@ function CampaignCard({ campaign }) {
 
       <h3>{campaign.campaign_bio || `Campaign #${campaign.campaign_id}`}</h3>
 
-      <p>
+      <p className="card-description">
         {campaign.body_text ||
           campaign.campaign_bio ||
           "No campaign description yet."}
@@ -54,7 +54,7 @@ function CampaignCard({ campaign }) {
 
       <ProgressBar value={raisedAmount} max={goalAmount} />
 
-      <p>{`Raised: ${raisedAmount} / Goal: ${goalAmount}`}</p>
+      <p className="card-progress-text">{`Raised: ${raisedAmount} / Goal: ${goalAmount}`}</p>
 
       <Link className="donate-btn" to={`/campaign/${campaign.campaign_id}`}>
         View Campaign

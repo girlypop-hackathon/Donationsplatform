@@ -16,6 +16,10 @@ import {
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 const API_PREFIX = API_BASE_URL ? `${API_BASE_URL}/api` : "/api";
 const PRESET_AMOUNTS = [50, 100, 250, 500];
+const DONATION_FREQUENCIES = {
+  ONE_TIME: "one_time",
+  MONTHLY: "monthly",
+};
 const FALLBACK_IMAGE_URL = resolveCampaignImageSource(
   "",
   "fundtogether-logo.png",
@@ -27,6 +31,9 @@ function CampaignPage() {
   const navigate = useNavigate();
   const [campaign, setCampaign] = useState(null);
   const [donations, setDonations] = useState([]);
+  const [donationFrequency, setDonationFrequency] = useState(
+    DONATION_FREQUENCIES.ONE_TIME,
+  );
   const [selectedPreset, setSelectedPreset] = useState(null);
   const [customAmount, setCustomAmount] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -114,11 +121,15 @@ function CampaignPage() {
   function handleDonate() {
     if (!hasValidAmount) return;
 
-    navigate(`/campaign/${id}/payment?amount=${selectedAmount}`, {
+    navigate(
+      `/campaign/${id}/payment?amount=${selectedAmount}&frequency=${donationFrequency}`,
+      {
       state: {
         amount: selectedAmount,
+        donationFrequency,
       },
-    });
+      },
+    );
   }
 
   if (isLoading) {
@@ -166,6 +177,28 @@ function CampaignPage() {
 
       <div className="donation-box">
         <h3>Donate</h3>
+        <div className="donation-frequency-buttons" role="radiogroup" aria-label="Payment type">
+          <button
+            type="button"
+            className={`preset-btn donation-type-btn ${donationFrequency === DONATION_FREQUENCIES.ONE_TIME ? "active" : ""}`}
+            onClick={() => {
+              setDonationFrequency(DONATION_FREQUENCIES.ONE_TIME);
+            }}
+            aria-pressed={donationFrequency === DONATION_FREQUENCIES.ONE_TIME}
+          >
+            Engangsbeløb
+          </button>
+          <button
+            type="button"
+            className={`preset-btn donation-type-btn ${donationFrequency === DONATION_FREQUENCIES.MONTHLY ? "active" : ""}`}
+            onClick={() => {
+              setDonationFrequency(DONATION_FREQUENCIES.MONTHLY);
+            }}
+            aria-pressed={donationFrequency === DONATION_FREQUENCIES.MONTHLY}
+          >
+            Fast månedligt beløb
+          </button>
+        </div>
 
         <div className="preset-donations">
           {PRESET_AMOUNTS.map((amount) => (

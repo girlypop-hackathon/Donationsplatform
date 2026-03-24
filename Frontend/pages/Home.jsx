@@ -148,6 +148,7 @@ function Home() {
         {shouldUseFallbackCampaigns && (
           <p>Showing demo campaigns while API data is unavailable.</p>
         )}
+
         {!isLoadingCampaigns &&
           campaignsToDisplay.map((campaign) => (
             <CampaignCard key={campaign.campaign_id} campaign={campaign} />

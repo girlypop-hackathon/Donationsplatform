@@ -12,6 +12,8 @@ function CreateCampaign() {
     creator_name: "",
     creator_email: "",
     provider_id: "",
+    provider_name: "",
+    use_private_provider: false,
     image: "",
     campaign_bio: "",
     body_text: "",
@@ -65,12 +67,25 @@ function CreateCampaign() {
     if (
       !formData.creator_name ||
       !formData.creator_email ||
-      !formData.provider_id ||
       !formData.campaign_bio ||
       !formData.goal_amount
     ) {
       setError(
         "Creator name, creator email, provider, campaign bio, and goal amount are required",
+      );
+      return;
+    }
+
+    const hasSelectedExistingProvider =
+      Number.isFinite(Number(formData.provider_id)) &&
+      Number(formData.provider_id) > 0;
+    const hasCustomOrganizationName = Boolean(
+      String(formData.provider_name || "").trim(),
+    );
+
+    if (!formData.use_private_provider && !hasSelectedExistingProvider && !hasCustomOrganizationName) {
+      setError(
+        "Choose an existing organization, choose Private, or enter your own organization name.",
       );
       return;
     }
@@ -101,7 +116,13 @@ function CreateCampaign() {
         body: JSON.stringify({
           creator_name: formData.creator_name.trim(),
           creator_email: formData.creator_email.trim(),
-          provider_id: parseInt(formData.provider_id),
+          provider_id: hasSelectedExistingProvider
+            ? parseInt(formData.provider_id)
+            : null,
+          provider_name: hasCustomOrganizationName
+            ? formData.provider_name.trim()
+            : null,
+          is_private_provider: Boolean(formData.use_private_provider),
           image: formData.image || "https://placehold.co/800x400?text=Campaign",
           campaign_bio: formData.campaign_bio,
           body_text: formData.body_text,
@@ -127,6 +148,8 @@ function CreateCampaign() {
         creator_name: "",
         creator_email: "",
         provider_id: "",
+        provider_name: "",
+        use_private_provider: false,
         image: "",
         campaign_bio: "",
         body_text: "",
@@ -151,7 +174,6 @@ function CreateCampaign() {
   return (
     <div className="form-page">
       <h1>Create a new campaign</h1>
-      <h2>- for now without logging in upsiiii </h2>
       <p>
         Fill out the form below to create a new fundraising campaign. Make sure
         to provide a compelling title and description to attract donors. You can
@@ -190,7 +212,7 @@ function CreateCampaign() {
         </div>
 
         <div className="form-group">
-          <label htmlFor="provider_id">Chose a owner *</label>
+          <label htmlFor="provider_id">Choose organization or private *</label>
           {isLoading ? (
             <select name="provider_id" id="provider_id" disabled>
               <option value="">Loading providers...</option>
@@ -200,10 +222,26 @@ function CreateCampaign() {
               name="provider_id"
               id="provider_id"
               value={formData.provider_id}
-              onChange={handleChange}
-              required
+              onChange={(event) => {
+                const nextProviderValue = event.target.value;
+                if (nextProviderValue === "private") {
+                  setFormData((prev) => ({
+                    ...prev,
+                    provider_id: "",
+                    use_private_provider: true,
+                  }));
+                  return;
+                }
+
+                setFormData((prev) => ({
+                  ...prev,
+                  provider_id: nextProviderValue,
+                  use_private_provider: false,
+                }));
+              }}
             >
               <option value="">Select a provider</option>
+              <option value="private">Private</option>
               {providers.map((provider) => (
                 <option
                   key={provider.organization_id}
@@ -214,6 +252,16 @@ function CreateCampaign() {
               ))}
             </select>
           )}
+
+          <label htmlFor="provider_name">Or write your own organization</label>
+          <input
+            type="text"
+            name="provider_name"
+            id="provider_name"
+            placeholder="Enter organization name"
+            value={formData.provider_name}
+            onChange={handleChange}
+          />
         </div>
 
         <div className="form-group">
