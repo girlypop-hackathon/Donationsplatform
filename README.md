@@ -66,11 +66,7 @@ Der er nu en GitHub Actions workflow i `.github/workflows/lint.yml`.
 - Tjekker både frontend og backend
 - Hvis lint fejler, fejler workflowet også (lint gate)
 
-## AI prompt
-
-spec kit - hvordan foreslår de at man udvikler med AI. Laver kravspekifekation og man vericiferer
-
-I need some style changes
-First, change the color of the buttons on CampaignPage to be the same blue color we have been using. 
-On Homepage the organisation links should also be this color. 
-Lastly, add blue boxes around the campaignCards on Home. They should always be the name size. 
+## AI written code
+This is a vibe hackaton. All code is writtten by AI. 
+As agents we used ChatGPT, Spec Kit with CoPilot, Codex 5.3 and Mistral Vibe. 
+As studens we are using GitHub Student Pack to get free accees on these models. 
