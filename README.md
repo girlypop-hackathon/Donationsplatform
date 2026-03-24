@@ -1,6 +1,6 @@
 # Donationsplatform
 
-10 day vibe hackaton
+10 day vibe hackaton having fun together 
 
 ## Sådan kører du projektet
 
