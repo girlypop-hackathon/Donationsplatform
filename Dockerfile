@@ -4,7 +4,7 @@
 # Beskrivelse: Docker image definition for the donation platform API
 # */
 
-FROM node:20-alpine
+FROM node:24-alpine
 
 WORKDIR /app
 
