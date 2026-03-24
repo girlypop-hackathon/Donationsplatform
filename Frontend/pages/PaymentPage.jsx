@@ -4,7 +4,7 @@ Af: Jonas og GPT-5.3-codex
 Beskrivelse: API endpoints for the donation platform
 */
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Link,
   useLocation,
@@ -80,6 +80,15 @@ function PaymentPage() {
   const campaignId = Number(id)
   const amountValue = Number(paymentForm.amount)
   const shouldDisableCredentialFields = paymentForm.isAnonymousDonation
+
+  // Keeps selected donation values in sync when navigating from campaign page.
+  useEffect(() => {
+    setPaymentForm((previousPaymentForm) => ({
+      ...previousPaymentForm,
+      donationFrequency: selectedFrequency,
+      amount: selectedAmount > 0 ? String(selectedAmount) : previousPaymentForm.amount,
+    }));
+  }, [selectedAmount, selectedFrequency]);
 
   // Validates that CPR contains exactly 10 digits, ignoring spaces and punctuation.
   function isValidCprNumber(cprNumber) {
