@@ -58,6 +58,7 @@ jobs:
           -e SMTP_PASS="${{ secrets.SMTP_PASS }}" \
           -e SMTP_FROM="${{ secrets.SMTP_FROM }}" \
           -e SMTP_SECURE="${{ secrets.SMTP_SECURE }}" \
+          -e FRONTEND_PUBLIC_URL="http://${{ secrets.SSH_HOST }}" \
           ghcr.io/girlypop-hackathon/donationsplatform:latest
 
           for attempt in $(seq 1 20); do
