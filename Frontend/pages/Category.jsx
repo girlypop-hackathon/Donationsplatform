@@ -4,7 +4,6 @@ Oprettet af: Føen og Codex
 Beskrivelse: Category page. Displays a list of campaign categories for users to browse.
 */
 
-import React from "react";
 import React, { useEffect, useMemo, useState } from "react";
 import CampaignCard from "../components/CampaignCard";
 
@@ -21,7 +20,6 @@ const DEFAULT_CATEGORIES = [
   "Community Projects",
   "Other",
 ];
->>>>>>> 3431c80d686f1b7988d695a0ebde0485092eff3b
 
 function Category() {
   const [campaigns, setCampaigns] = useState([]);

@@ -51,11 +51,11 @@ jobs:
           docker stop app || true
           docker rm app || true
 
-          docker run -d -p 80:3000 --name app \
+          docker run -d -p 80:3000 --restart unless-stopped --name app \
           ghcr.io/girlypop-hackathon/donationsplatform:latest
 
           for attempt in $(seq 1 20); do
-            if curl -fsS http://localhost:80/api/providers > /dev/null; then
+            if curl -fsS http://localhost:80/api/providers > /dev/null && curl -fsS http://localhost:80/ > /dev/null; then
               echo "Health check passed on attempt ${attempt}."
               exit 0
             fi

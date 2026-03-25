@@ -30,11 +30,15 @@ When you are connected to the VM with SSH, run:
 ```bash
 cd ~/Donationsplatform/Scripts
 chmod +x setup.sh
-./setup.sh
+GHCR_READ_TOKEN="<YOUR_GHCR_PAT_WITH_READ_PACKAGES>" ./setup.sh
 exit
 ```
 
 Then SSH in again so Docker group permissions are applied.
+
+If `GHCR_READ_TOKEN` is set, the setup script now also logs in to GHCR and pulls:
+
+- `ghcr.io/girlypop-hackathon/donationsplatform:latest`
 
 ## 3) Login to GHCR and run latest image
 
