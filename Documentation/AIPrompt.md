@@ -20,3 +20,5 @@ Oprettet: (Date created)
 Af: Navn og Navn på AI (GPT-5.3-codex)
 Beskrivelse: API endpoints for the donation platform
 _/
+
+...

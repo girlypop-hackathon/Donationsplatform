@@ -123,6 +123,12 @@ async function processDonationAndEmailFlow(donationInput) {
     donationInput.campaignId,
   ]);
   const totalRaisedAmount = Number(totalRaisedRow.total_raised || 0);
+
+  await runQuery(
+    "UPDATE campaigns SET amount_raised = ? WHERE campaign_id = ?",
+    [totalRaisedAmount, donationInput.campaignId],
+  );
+
   const previousTotalRaisedAmount = Math.max(
     0,
     totalRaisedAmount - donationInput.amount,

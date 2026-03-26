@@ -9,15 +9,22 @@ const nodemailer = require("nodemailer");
 const senderEmailAddress =
   process.env.SMTP_FROM || "no-reply@donationsplatform.local";
 
+function normalizeConfigValue(rawValue) {
+  return String(rawValue || "")
+    .trim()
+    .replace(/^['\"]+|['\"]+$/g, "");
+}
+
 /**
  * Creates an SMTP transporter when all SMTP environment variables are configured.
  * Returns null when SMTP is not configured so the API can still run in development.
  */
 function createSmtpTransporter() {
-  const smtpHost = process.env.SMTP_HOST;
-  const smtpPort = Number(process.env.SMTP_PORT || 587);
-  const smtpUser = process.env.SMTP_USER;
-  const smtpPassword = process.env.SMTP_PASS;
+  const smtpHost = normalizeConfigValue(process.env.SMTP_HOST);
+  const smtpPort = Number(normalizeConfigValue(process.env.SMTP_PORT) || 587);
+  const smtpUser = normalizeConfigValue(process.env.SMTP_USER);
+  const smtpPassword = normalizeConfigValue(process.env.SMTP_PASS);
+  const smtpSecureRaw = normalizeConfigValue(process.env.SMTP_SECURE).toLowerCase();
 
   if (!smtpHost || !smtpUser || !smtpPassword) {
     return null;
@@ -26,7 +33,7 @@ function createSmtpTransporter() {
   return nodemailer.createTransport({
     host: smtpHost,
     port: smtpPort,
-    secure: process.env.SMTP_SECURE === "true",
+    secure: smtpSecureRaw === "true",
     auth: {
       user: smtpUser,
       pass: smtpPassword,
@@ -39,8 +46,8 @@ const smtpTransporter = createSmtpTransporter();
 if (smtpTransporter) {
   console.log("[EMAIL] SMTP transporter configured", {
     host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT || 587),
-    secure: process.env.SMTP_SECURE === "true",
+    port: Number(normalizeConfigValue(process.env.SMTP_PORT) || 587),
+    secure: normalizeConfigValue(process.env.SMTP_SECURE).toLowerCase() === "true",
     from: senderEmailAddress,
   });
 } else {
